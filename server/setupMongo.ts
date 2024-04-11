@@ -1,49 +1,62 @@
-import { MongoClient } from 'mongodb'
-import { Operator, Customer } from './data'
+import { MongoClient } from "mongodb";
+import { Operator, Customer, Product, Review, Order, Tag } from "./data";
 
 // Connection URL
-const url = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017'
-const client = new MongoClient(url)
+const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+const client = new MongoClient(url);
 
-const operators: Operator[] = [
+const reviews: Review[] = [
   {
     _id: "jim",
-    name: "Jim",
+    userId: "Jim",
+    productId: "1",
+    rating: 5,
+    buyAgain: true,
+    text: "amazing ramen!",
+    tags: [
+      {
+        word: "sweet",
+      },
+    ],
   },
   {
     _id: "mary",
-    name: "Mary",
+    userId: "Mary",
+    productId: "1",
+    rating: 4,
+    buyAgain: true,
+    text: "nice ramen!",
+    tags: [
+      {
+        word: "spicy",
+      },
+    ],
   },
-]
-
-const customers: Customer[] = [
-  {
-    _id: "alice",
-    name: "Alice",
-  },
-  {
-    _id: "bob",
-    name: "Bob",
-  },
-]
+];
 
 async function main() {
-  await client.connect()
-  console.log('Connected successfully to MongoDB')
+  await client.connect();
+  console.log("Connected successfully to MongoDB");
 
-  const db = client.db("test")
+  const db = client.db("test");
 
   // set up unique index for upsert -- to make sure a customer cannot have more than one draft order
-  db.collection("orders").createIndex(
-    { customerId: 1 }, 
-    { unique: true, partialFilterExpression: { state: "draft" } }
-  )
+  // db.collection("orders").createIndex(
+  //   { customerId: 1 },
+  //   { unique: true, partialFilterExpression: { state: "draft" } }
+  // );
 
   // add data
-  console.log("inserting customers", await db.collection("customers").insertMany(customers as any))
-  console.log("inserting operators", await db.collection("operators").insertMany(operators as any))
+  console.log(
+    "inserting reviews",
+    await db.collection("reviews").insertMany(reviews as any)
+  );
+  // console.log(
+  //   "inserting operators",
+  //   await db.collection("operators").insertMany(operators as any)
+  // );
 
-  process.exit(0)
+  process.exit(0);
 }
 
-main()
+main();

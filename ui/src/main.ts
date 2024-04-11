@@ -7,11 +7,10 @@ import "bootstrap-vue/dist/bootstrap-vue.css";
 
 import App from "./App.vue";
 import UserProfile from "./views/UserProfile.vue";
-import OperatorScreen from "./views/OperatorScreen.vue";
-import StatusScreen from "./views/StatusScreen.vue";
 import ShoppingCart from "./views/ShoppingCart.vue";
 import Product from "./views/Product.vue";
 import Home from "./views/Home.vue";
+import Login from "./views/Login.vue";
 
 const routes = [
   {
@@ -40,17 +39,12 @@ const routes = [
     }),
   },
   {
-    path: "/operator/:operatorId",
-    component: OperatorScreen,
-    props: ({
-      params: { operatorId },
-    }: {
-      params: { operatorId: string };
-    }) => ({ operatorId }),
-  },
-  {
     path: "/",
     component: Home,
+  },
+  {
+    path: "/login",
+    component: Login,
   },
 ];
 

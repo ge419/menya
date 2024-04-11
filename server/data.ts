@@ -43,7 +43,6 @@ export interface Product {
 }
 
 export interface Tag {
-  _id: string;
   word: string;
 }
 
@@ -54,7 +53,7 @@ export interface Review {
   rating: number;
   buyAgain: boolean;
   text: string;
-  rags: Tag[];
+  tags: Tag[];
 }
 
 export interface Order {
