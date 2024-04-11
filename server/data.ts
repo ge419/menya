@@ -5,24 +5,18 @@ export interface DraftOrder {
   ingredients: string[];
 }
 
-export interface StringIdDocument {
+export interface Order extends DraftOrder {
   _id: string;
-}
-
-export interface Order extends DraftOrder, StringIdDocument {
   state: "draft" | "queued" | "blending" | "done";
   operatorId?: string;
 }
 
-export interface Customer extends StringIdDocument {
+export interface Customer {
+  _id: string;
   name: string;
 }
 
 export interface CustomerWithOrders extends Customer {
-  orders: Order[];
-}
-
-export interface OperatorWithOrders extends Operator {
   orders: Order[];
 }
 

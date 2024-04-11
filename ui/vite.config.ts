@@ -21,10 +21,10 @@ export default defineConfig({
   ],
 
 	server: {
-		port: 8190,
+		port: 8192,
 		proxy: {
 			"^/api": {
-				target: "http://127.0.0.1:8191"
+				target: "http://127.0.0.1:8193"
 			},
     }
 	},

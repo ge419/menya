@@ -8,6 +8,10 @@
     <h2>Items</h2>
     <h2>Total:</h2>
     <h3>Deliver to: Address</h3>
+    <div class="mt-2">
+      <b-button @click="save">Save</b-button>
+      Note: must save before submitting
+    </div>
     <b-button @click="pay" class="mb-2">Pay</b-button>
   </div>
 </template>

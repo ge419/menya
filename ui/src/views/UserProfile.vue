@@ -3,7 +3,7 @@
     <b-jumbotron
       bg-variant="primary"
       text-variant="white"
-      :header="`Welcome, ${name}`"
+      :header="`Welcome, ${user}`"
     />
 
     <h2>Address</h2>
@@ -33,68 +33,69 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed, Ref } from "vue";
-import { CustomerWithOrders } from "../data";
-
-// props
-interface Props {
-  customerId: string;
-}
-
-// default values for props
-const props = withDefaults(defineProps<Props>(), {
-  customerId: "",
-});
+import { watch, ref, inject, Ref } from "vue";
+import { CustomerWithOrders } from "../../../server/data";
 
 const customer: Ref<CustomerWithOrders | null> = ref(null);
+const user: Ref<any> = inject("user")!;
 
-const name = computed(() => customer.value?.name || props.customerId);
 const draftOrderIngredients: Ref<string[]> = ref([]);
 const possibleIngredients: Ref<string[]> = ref([]);
 
-async function refresh() {
-  possibleIngredients.value = await (
-    await fetch("/api/possible-ingredients")
-  ).json();
+// async function refresh() {
+//   possibleIngredients.value = await (await fetch("/api/possible-ingredients")).json()
 
-  if (props.customerId) {
-    customer.value = await (
-      await fetch("/api/customer/" + encodeURIComponent(props.customerId))
-    ).json();
-    draftOrderIngredients.value =
-      (
-        await (
-          await fetch(
-            "/api/customer/" +
-              encodeURIComponent(props.customerId) +
-              "/draft-order"
-          )
-        ).json()
-      )?.ingredients || [];
+//   if (user.value) {
+//     customer.value = await (await fetch("/api/customer")).json()
+//     draftOrderIngredients.value = (await (await fetch("/api/customer/draft-order")).json())?.ingredients || []
+//   }
+// }
+async function refresh() {
+  try {
+    const ingredientsResponse = await fetch("/api/possible-ingredients");
+    if (!ingredientsResponse.ok) {
+      throw new Error("Failed to fetch possible ingredients");
+    }
+    possibleIngredients.value = await ingredientsResponse.json();
+  } catch (error) {
+    console.error(error);
+    alert("An error occurred while fetching possible ingredients.");
+  }
+
+  if (user.value) {
+    try {
+      const customerResponse = await fetch("/api/customer");
+      if (!customerResponse.ok) {
+        throw new Error("Failed to fetch customer data");
+      }
+      customer.value = await customerResponse.json();
+
+      const draftResponse = await fetch("/api/customer/draft-order");
+      if (!draftResponse.ok) {
+        throw new Error("Failed to fetch draft order");
+      }
+      draftOrderIngredients.value =
+        (await draftResponse.json())?.ingredients || [];
+    } catch (error) {
+      console.error(error);
+      alert("An error occurred while fetching customer data.");
+    }
   }
 }
-onMounted(refresh);
+watch(user, refresh, { immediate: true });
 
 async function save() {
-  await fetch(
-    "/api/customer/" + encodeURIComponent(props.customerId) + "/draft-order",
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "PUT",
-      body: JSON.stringify({ ingredients: draftOrderIngredients.value }),
-    }
-  );
+  await fetch("/api/customer/draft-order", {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+    body: JSON.stringify({ ingredients: draftOrderIngredients.value }),
+  });
 }
 
 async function submit() {
-  await fetch(
-    "/api/customer/" +
-      encodeURIComponent(props.customerId) +
-      "/submit-draft-order",
-    { method: "POST" }
-  );
+  await fetch("/api/customer/submit-draft-order", { method: "POST" });
   await refresh();
 }
 </script>
