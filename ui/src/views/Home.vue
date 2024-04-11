@@ -5,7 +5,6 @@
       text-variant="white"
       :header="`Welcome to Menya!`"
     />
-    <MenuBar />
     <b-container fluid="lg" class="my-4">
       <b-row>
         <b-col
@@ -24,7 +23,6 @@
 </template>
 
 <script setup lang="ts">
-import MenuBar from "../components/MenuBar.vue";
 import ProductItem from "../components/ProductItem.vue";
 import { ref } from "vue";
 
