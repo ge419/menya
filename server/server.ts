@@ -1,73 +1,116 @@
-import express from 'express'
-import bodyParser from 'body-parser'
-import pino from 'pino'
-import expressPinoLogger from 'express-pino-logger'
-import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
-import { Customer, CustomerWithOrders, DraftOrder, Operator, OperatorWithOrders, Order, possibleIngredients } from './data'
+import express from "express";
+import bodyParser from "body-parser";
+import pino from "pino";
+import expressPinoLogger from "express-pino-logger";
+import { Collection, Db, MongoClient, ObjectId } from "mongodb";
+import {
+  Customer,
+  CustomerWithOrders,
+  DraftOrder,
+  Operator,
+  OperatorWithOrders,
+  Order,
+  possibleIngredients,
+  Product,
+  Review,
+} from "./data";
 
 // set up Mongo
-const url = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017'
-const client = new MongoClient(url)
-let db: Db
-let customers: Collection<Customer>
-let orders: Collection<Order>
-let operators: Collection<Operator>
+const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+const client = new MongoClient(url);
+let db: Db;
+let customers: Collection<Customer>;
+let orders: Collection<Order>;
+let operators: Collection<Operator>;
+let products: Collection<Product>;
+let reviews: Collection<Review>;
 
 // set up Express
-const app = express()
-const port = parseInt(process.env.PORT) || 8191
-app.use(bodyParser.json())
+const app = express();
+const port = parseInt(process.env.PORT) || 8191;
+app.use(bodyParser.json());
 
 // set up Pino logging
 const logger = pino({
   transport: {
-    target: 'pino-pretty'
-  }
-})
-app.use(expressPinoLogger({ logger }))
+    target: "pino-pretty",
+  },
+});
+app.use(expressPinoLogger({ logger }));
 
 // app routes
+
+// Retrieve all products
+app.get("/api/get-products");
+
+// Retrieve product details
+app.get("/api/get-product/:productId", async (req, res) => {
+  const _id = req.params.productId;
+  const product: Partial<Product> | null = await products.findOne({
+    _id,
+  });
+  if (product == null) {
+    res.status(404).json({ _id });
+    return;
+  }
+  product.reviews = await reviews.find({ productId: _id }).toArray();
+  res.status(200).json(product);
+});
+
+// Retrieve user information
+app.get("/api/get-user-info");
+
+//
+
 app.get("/api/possible-ingredients", (req, res) => {
-  res.status(200).json(possibleIngredients)
-})
+  res.status(200).json(possibleIngredients);
+});
 
 app.get("/api/orders", async (req, res) => {
-  res.status(200).json(await orders.find({ state: { $ne: "draft" }}).toArray())
-})
+  res
+    .status(200)
+    .json(await orders.find({ state: { $ne: "draft" } }).toArray());
+});
 
 app.get("/api/customer/:customerId", async (req, res) => {
-  const _id = req.params.customerId
-  const customer: Partial<CustomerWithOrders> | null = await customers.findOne({ _id })
+  const _id = req.params.customerId;
+  const customer: Partial<CustomerWithOrders> | null = await customers.findOne({
+    _id,
+  });
   if (customer == null) {
-    res.status(404).json({ _id })
-    return
+    res.status(404).json({ _id });
+    return;
   }
-  customer.orders = await orders.find({ customerId: _id, state: { $ne: "draft" } }).toArray()
-  res.status(200).json(customer)
-})
+  customer.orders = await orders
+    .find({ customerId: _id, state: { $ne: "draft" } })
+    .toArray();
+  res.status(200).json(customer);
+});
 
 app.get("/api/operator/:operatorId", async (req, res) => {
-  const _id = req.params.operatorId
-  const operator: Partial<OperatorWithOrders> | null = await operators.findOne({ _id })
+  const _id = req.params.operatorId;
+  const operator: Partial<OperatorWithOrders> | null = await operators.findOne({
+    _id,
+  });
   if (operator == null) {
-    res.status(404).json({ _id })
-    return
+    res.status(404).json({ _id });
+    return;
   }
-  operator.orders = await orders.find({ operatorId: _id }).toArray()
-  res.status(200).json(operator)
-})
+  operator.orders = await orders.find({ operatorId: _id }).toArray();
+  res.status(200).json(operator);
+});
 
 app.get("/api/customer/:customerId/draft-order", async (req, res) => {
-  const { customerId } = req.params
+  const { customerId } = req.params;
 
   // TODO: validate customerId
 
-  const draftOrder = await orders.findOne({ state: "draft", customerId })
-  res.status(200).json(draftOrder || { customerId, ingredients: [] })
-})
+  const draftOrder = await orders.findOne({ state: "draft", customerId });
+  res.status(200).json(draftOrder || { customerId, ingredients: [] });
+});
 
 app.put("/api/customer/:customerId/draft-order", async (req, res) => {
-  const order: DraftOrder = req.body
+  const order: DraftOrder = req.body;
 
   // TODO: validate customerId
 
@@ -78,15 +121,15 @@ app.put("/api/customer/:customerId/draft-order", async (req, res) => {
     },
     {
       $set: {
-        ingredients: order.ingredients
-      }
+        ingredients: order.ingredients,
+      },
     },
     {
-      upsert: true
+      upsert: true,
     }
-  )
-  res.status(200).json({ status: "ok" })
-})
+  );
+  res.status(200).json({ status: "ok" });
+});
 
 app.post("/api/customer/:customerId/submit-draft-order", async (req, res) => {
   const result = await orders.updateOne(
@@ -97,73 +140,75 @@ app.post("/api/customer/:customerId/submit-draft-order", async (req, res) => {
     {
       $set: {
         state: "queued",
-      }
+      },
     }
-  )
+  );
   if (result.modifiedCount === 0) {
-    res.status(400).json({ error: "no draft order" })
-    return
+    res.status(400).json({ error: "no draft order" });
+    return;
   }
-  res.status(200).json({ status: "ok" })
-})
+  res.status(200).json({ status: "ok" });
+});
 
 app.put("/api/order/:orderId", async (req, res) => {
-  const order: Order = req.body
+  const order: Order = req.body;
 
   // TODO: validate order object
 
   const condition: any = {
     _id: new ObjectId(req.params.orderId),
-    state: { 
+    state: {
       $in: [
         // because PUT is idempotent, ok to call PUT twice in a row with the existing state
-        order.state
-      ]
+        order.state,
+      ],
     },
-  }
+  };
   switch (order.state) {
     case "blending":
-      condition.state.$in.push("queued")
+      condition.state.$in.push("queued");
       // can only go to blending state if no operator assigned (or is the current user, due to idempotency)
-      condition.$or = [{ operatorId: { $exists: false }}, { operatorId: order.operatorId }]
-      break
+      condition.$or = [
+        { operatorId: { $exists: false } },
+        { operatorId: order.operatorId },
+      ];
+      break;
     case "done":
-      condition.state.$in.push("blending")
-      condition.operatorId = order.operatorId
-      break
+      condition.state.$in.push("blending");
+      condition.operatorId = order.operatorId;
+      break;
     default:
       // invalid state
-      res.status(400).json({ error: "invalid state" })
-      return
+      res.status(400).json({ error: "invalid state" });
+      return;
   }
-  
-  const result = await orders.updateOne(
-    condition,
-    {
-      $set: {
-        state: order.state,
-        operatorId: order.operatorId,
-      }
-    }
-  )
+
+  const result = await orders.updateOne(condition, {
+    $set: {
+      state: order.state,
+      operatorId: order.operatorId,
+    },
+  });
 
   if (result.matchedCount === 0) {
-    res.status(400).json({ error: "orderId does not exist or state change not allowed" })
-    return
+    res
+      .status(400)
+      .json({ error: "orderId does not exist or state change not allowed" });
+    return;
   }
-  res.status(200).json({ status: "ok" })
-})
+  res.status(200).json({ status: "ok" });
+});
 
 // connect to Mongo
 client.connect().then(() => {
-  console.log('Connected successfully to MongoDB')
-  db = client.db("test")
-  operators = db.collection('operators')
-  orders = db.collection('orders')
-  customers = db.collection('customers')
+  console.log("Connected successfully to MongoDB");
+  db = client.db("test");
+  operators = db.collection("operators");
+  orders = db.collection("orders");
+  customers = db.collection("customers");
 
   // start server
   app.listen(port, () => {
-    console.log(`Smoothie server listening on port ${port}`)
-  })
-})
+    console.log(`Smoothie server listening on port ${port}`);
+  });
+});
