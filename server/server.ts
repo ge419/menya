@@ -21,7 +21,12 @@ import { gitlab } from "./secrets";
 // const HOST = process.env.HOST || "127.0.0.1";
 const HOST = process.env.HOST || "localhost";
 const OPERATOR_GROUP_ID = "";
-const DISABLE_SECURITY = !!process.env.DISABLE_SECURITY;
+const DISABLE_SECURITY = process.env.DISABLE_SECURITY;
+
+const passportStrategies = [
+  ...(DISABLE_SECURITY ? ["disable-security"] : []),
+  "oidc",
+];
 
 // set up Mongo
 const mongoUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
@@ -328,17 +333,26 @@ client.connect().then(async () => {
   products = db.collection("products");
   reviews = db.collection("reviews");
 
-  if (DISABLE_SECURITY) {
-    passport.use(
-      "oidc",
-      new CustomStrategy((req, done) =>
+  passport.use(
+    "disable-security",
+    new CustomStrategy((req, done) => {
+      if (req.query.key !== DISABLE_SECURITY) {
+        console.log(
+          "you must supply ?key=" +
+            DISABLE_SECURITY +
+            " to log in via DISABLE_SECURITY"
+        );
+        done(null, false);
+      } else {
         done(null, {
           preferred_username: req.query.user,
-          roles: req.query.role,
-        })
-      )
-    );
-  } else {
+          roles: [].concat(req.query.role),
+        });
+      }
+    })
+  );
+
+  {
     const issuer = await Issuer.discover("https://coursework.cs.duke.edu/");
     const client = new issuer.Client(gitlab);
 

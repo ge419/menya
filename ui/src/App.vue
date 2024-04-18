@@ -11,14 +11,15 @@
       </b-navbar-brand>
       <b-navbar-nav>
         <b-nav-item href="/">All Products</b-nav-item>
-        <b-nav-item v-if="user?.roles?.includes('customer')" href="/customer"
+        <b-nav-item
+          v-if="user?.roles?.includes('customer')"
+          href="/shoppingCart/${user.id}"
           >My Orders</b-nav-item
         >
-        <b-nav-item v-if="user?.roles?.includes('customer')" href="/profile"
+        <b-nav-item
+          v-if="user?.roles?.includes('customer')"
+          href="/profile/${user.id}"
           >My Profile</b-nav-item
-        >
-        <b-nav-item v-if="user?.roles?.includes('operator')" href="/operator"
-          >My Work Screen</b-nav-item
         >
         <b-nav-item v-if="user?.name == null" href="/api/login"
           >Login</b-nav-item

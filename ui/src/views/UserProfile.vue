@@ -3,7 +3,7 @@
     <b-jumbotron
       bg-variant="primary"
       text-variant="white"
-      :header="`Welcome, ${user}`"
+      :header="`Welcome, ${user.name}`"
     />
 
     <h2>Address</h2>

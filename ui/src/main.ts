@@ -14,7 +14,7 @@ import Login from "./views/Login.vue";
 
 const routes = [
   {
-    path: "/customer/:customerId",
+    path: "/profile/:customerId",
     component: UserProfile,
     props: ({
       params: { customerId },
