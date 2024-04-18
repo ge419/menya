@@ -12,7 +12,7 @@
           sm="6"
           xs="12"
           v-for="product in products"
-          :key="product.id"
+          :key="product._id"
           class="mb-4"
         >
           <ProductItem :product="product" />
@@ -23,19 +23,24 @@
 </template>
 
 <script setup lang="ts">
+import { Product } from "../../../server/data";
 import ProductItem from "../components/ProductItem.vue";
-import { ref } from "vue";
+import { Ref, onMounted, ref } from "vue";
 
-const products = ref([
-  // Example products data
-  { id: 1, name: "Product 1" },
-  { id: 2, name: "Product 2" },
-  { id: 3, name: "Product 3" },
-  { id: 4, name: "Product 4" },
-  { id: 5, name: "Product 5" },
-  { id: 6, name: "Product 6" },
-  { id: 7, name: "Product 7" },
+const products: Ref<Product[]> = ref([]);
 
-  // Add more products as needed
-]);
+async function refresh() {
+  products.value = await (await fetch("api/all-products")).json();
+}
+onMounted(refresh);
+
+// const products = ref([
+//   { id: 1, name: "Product 1" },
+//   { id: 2, name: "Product 2" },
+//   { id: 3, name: "Product 3" },
+//   { id: 4, name: "Product 4" },
+//   { id: 5, name: "Product 5" },
+//   { id: 6, name: "Product 6" },
+//   { id: 7, name: "Product 7" },
+// ]);
 </script>

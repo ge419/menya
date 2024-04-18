@@ -10,9 +10,12 @@
         <span v-else>Menya</span>
       </b-navbar-brand>
       <b-navbar-nav>
-        <b-nav-item href="/">All Orders</b-nav-item>
+        <b-nav-item href="/">All Products</b-nav-item>
         <b-nav-item v-if="user?.roles?.includes('customer')" href="/customer"
           >My Orders</b-nav-item
+        >
+        <b-nav-item v-if="user?.roles?.includes('customer')" href="/profile"
+          >My Profile</b-nav-item
         >
         <b-nav-item v-if="user?.roles?.includes('operator')" href="/operator"
           >My Work Screen</b-nav-item

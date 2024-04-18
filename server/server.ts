@@ -18,7 +18,8 @@ import { Strategy as CustomStrategy } from "passport-custom";
 import cors from "cors";
 import { gitlab } from "./secrets";
 
-const HOST = process.env.HOST || "127.0.0.1";
+// const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || "localhost";
 const OPERATOR_GROUP_ID = "";
 const DISABLE_SECURITY = !!process.env.DISABLE_SECURITY;
 
@@ -127,7 +128,13 @@ function checkRole(requiredRoles: string[]) {
 // app routes
 
 // Retrieve all products
-app.get("/api/get-products");
+app.get("/api/all-products", async (req, res) => {
+  // res.status(200).json(await products.find({}).toArray());
+  res.status(200).json(await products.find({}).toArray());
+  console.log("Retrieve all products");
+});
+
+// Move to products page
 
 // Retrieve product details
 app.get("/api/get-product/:productId", async (req, res) => {
@@ -139,8 +146,16 @@ app.get("/api/get-product/:productId", async (req, res) => {
     res.status(404).json({ _id });
     return;
   }
-  product.reviews = await reviews.find({ productId: _id }).toArray();
+  // product.reviews = await reviews.find({ productId: _id }).toArray();
   res.status(200).json(product);
+});
+
+// Query product reviews
+
+app.get("/api/get-reviews/:productId", async (req, res) => {
+  const productId = req.params.productId;
+  const productReviews = await reviews.find({ productId: productId }).toArray();
+  res.status(200).json(productReviews);
 });
 
 // Retrieve user information
@@ -310,6 +325,8 @@ client.connect().then(async () => {
   logger.info("connected successfully to MongoDB");
   db = client.db("test");
   orders = db.collection("orders");
+  products = db.collection("products");
+  reviews = db.collection("reviews");
 
   if (DISABLE_SECURITY) {
     passport.use(

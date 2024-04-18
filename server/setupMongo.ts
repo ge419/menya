@@ -34,11 +34,37 @@ const reviews: Review[] = [
   },
 ];
 
+const products: Product[] = [
+  {
+    _id: "1",
+    name: "Shin Ramen",
+    origin: "Korea",
+    company: "Nongshim",
+    avgRating: 4.5,
+    description: "Spicy ramen ranked #1 in Korea",
+    tags: [
+      {
+        word: "spicy",
+      },
+      {
+        word: "korean",
+      },
+    ],
+  },
+];
+
 async function main() {
   await client.connect();
   console.log("Connected successfully to MongoDB");
 
-  const reviewsDB = client.db("reviews");
+  const db = client.db("test");
+
+  // const reviewsDB = client.db("reviews");
+  // const productsDB = client.db("products");
+
+  // const productsCollection = db.collection("products");
+  // // Indexing products by name or another relevant field
+  // await productsCollection.createIndex({ name: 1 });
 
   // set up unique index for upsert -- to make sure a customer cannot have more than one draft order
   // db.collection("orders").createIndex(
@@ -49,12 +75,12 @@ async function main() {
   // add data
   console.log(
     "inserting reviews",
-    await reviewsDB.collection("reviews").insertMany(reviews as any)
+    await db.collection("reviews").insertMany(reviews as any)
   );
-  // console.log(
-  //   "inserting operators",
-  //   await db.collection("operators").insertMany(operators as any)
-  // );
+  console.log(
+    "inserting products",
+    await db.collection("products").insertMany(products as any)
+  );
 
   process.exit(0);
 }

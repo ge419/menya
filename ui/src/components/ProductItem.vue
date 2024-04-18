@@ -13,10 +13,20 @@
 </template>
 
 <script setup lang="ts">
-interface Props {}
-defineProps<Props>();
+import { useRouter } from "vue-router";
+import Product from "../views/Product.vue";
 
-function handleProductClick() {}
+const props = defineProps({
+  product: Product,
+});
 
+const router = useRouter();
+
+// Link to Product Page
+function handleProductClick() {
+  router.push(`/product/${props.product._id}`);
+}
+
+// Add product to cart of current user
 function handleAddCartClick() {}
 </script>

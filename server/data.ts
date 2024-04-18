@@ -33,7 +33,7 @@ export interface Product {
   avgRating: number;
   description: string;
   tags: Tag[];
-  reviews: Review[];
+  // reviews: Review[];
 }
 
 export interface Tag {
