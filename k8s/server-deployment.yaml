@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: server
+  name: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - image: cs590-final-server
+          name: server
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8193
+              name: server
+          env:
+            - name: MONGO_URL
+              value: mongodb://db
