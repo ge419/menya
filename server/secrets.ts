@@ -1,5 +1,5 @@
 export const gitlab = {
-  client_id: "9da9114a205884c4f13e47947a7dacd9b7fcb87a0828f54b3abc0274aa69ecb9",
+  client_id: "7d70bd64a6c0559318f2810818961dc38579a651023005a217b92511b19df037",
   client_secret:
-    "gloas-db7e926337fb4d3968f462f582dd9a7185f29e95a05fe1a6872673a8ebaa4326",
+    "gloas-14f37fd0abc93bb644fd466ec047f04edd3961c9e428ab9b80b8355095eaa839",
 };
