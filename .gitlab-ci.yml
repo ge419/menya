@@ -66,10 +66,10 @@ mongo_setup:
   rules:
     - when: manual
   script:
-    - kubectl port-forward service/db 27017/27017 &
-    - MONGO_PORT_FORWARD_PID=$!
-    - echo "Port-forwarding PID: $MONGO_PORT_FORWARD_PID"
-    - sleep 5
-    - cd server
-    - npm run setup
-    - kill $MONGO_PORT_FORWARD_PID
+    kubectl port-forward service/db 27017/27017 &
+    MONGO_PORT_FORWARD_PID=$!
+    echo "Port-forwarding PID: $MONGO_PORT_FORWARD_PID"
+    sleep 5
+    cd server
+    npm run setup
+    kill $MONGO_PORT_FORWARD_PID
