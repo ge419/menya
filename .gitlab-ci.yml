@@ -65,10 +65,9 @@ mongo_setup:
   stage: deploy
   rules:
     - when: manual
-  script:
-    kubectl port-forward service/db 27017/27017 &
+  script: kubectl port-forward service/db 27017/27017 &
     MONGO_PORT_FORWARD_PID=$!
-    echo "Port-forwarding PID: $MONGO_PORT_FORWARD_PID"
+    echo "$MONGO_PORT_FORWARD_PID"
     sleep 5
     cd server
     npm run setup
