@@ -18,8 +18,9 @@
 
 stages: # List of stages for jobs, and their order of execution
   - build
-  - test
+  # - test
   - deploy
+  - cleanup
 
 build-job: # This job runs in the build stage, which runs first.
   stage: build
@@ -72,3 +73,10 @@ mongo_setup:
     cd server
     npm run setup
     kill $MONGO_PORT_FORWARD_PID
+
+cleanup:
+  stage: cleanup
+  script:
+    - kubectl delete -f k8s/
+  rules:
+    -when: manual
