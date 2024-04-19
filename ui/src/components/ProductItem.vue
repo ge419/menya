@@ -6,9 +6,13 @@
     class="mb-2"
     @click="handleProductClick"
   >
-    <b-button @click="handleAddOneCartClick" variant="primary"
-      >Add to Cart</b-button
-    >
+    <!-- Display product price next to the Add to Cart button -->
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="price-tag">Price: ${{ product.price.toFixed(2) }}</span>
+      <b-button @click.stop="handleAddOneCartClick" variant="primary">
+        Add to Cart
+      </b-button>
+    </div>
   </b-card>
 </template>
 
@@ -30,7 +34,7 @@ function handleProductClick() {
 // Add one product to cart of current user
 async function handleAddOneCartClick() {
   // TODO: Error handling for invaliud quantity --> backend?
-  await fetch("/api/user/add-cart", {
+  await fetch(`/api/user/add-cart:${props.product._id}`, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -41,3 +45,16 @@ async function handleAddOneCartClick() {
   });
 }
 </script>
+
+<style scoped>
+.price-tag {
+  font-size: 1rem; /* Adjust size as needed */
+  font-weight: bold; /* Make the price stand out */
+  color: #333; /* Dark color for better readability */
+}
+
+/* Add padding to the button for better touch target size */
+.b-button {
+  padding: 0.375rem 0.75rem;
+}
+</style>

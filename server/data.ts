@@ -1,3 +1,5 @@
+import { StringLiteral } from "typescript";
+
 export const possibleIngredients = ["strawberry", "milk", "banana"];
 
 export interface DraftOrder {
@@ -62,4 +64,12 @@ export interface Cart {
   products: CartProduct[];
   status: "draft" | "paid";
   // totalCost: number;
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  username: string;
+  email: string;
+  address: string;
 }

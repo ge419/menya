@@ -3,6 +3,7 @@ import { Operator, Customer, Product, Review, Order, Tag } from "./data";
 
 // Connection URL
 const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+// const url = process.env.MONGO_URL || "mongodb://db";
 const client = new MongoClient(url);
 
 const reviews: Review[] = [
@@ -49,6 +50,46 @@ const products: Product[] = [
       },
       {
         word: "korean",
+      },
+    ],
+  },
+  {
+    _id: "2",
+    name: "Jin Ramen Spicy",
+    price: 4.99,
+    origin: "Korea",
+    company: "Ottogi",
+    avgRating: 4.6,
+    description: "Spicy ramen famous in Korea",
+    tags: [
+      {
+        word: "spicy",
+      },
+      {
+        word: "korean",
+      },
+      {
+        word: "sweet",
+      },
+    ],
+  },
+  {
+    _id: "3",
+    name: "Jin Ramen Mild",
+    price: 4.99,
+    origin: "Korea",
+    company: "Ottogi",
+    avgRating: 4.3,
+    description: "Non-spicy ramen from Korea",
+    tags: [
+      {
+        word: "mild",
+      },
+      {
+        word: "korean",
+      },
+      {
+        word: "sweet",
       },
     ],
   },

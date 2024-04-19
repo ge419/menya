@@ -10,7 +10,7 @@
     <div>Average Rating: {{ product?.avgRating }}</div>
     <!-- <div>Previously Purchased?</div> -->
     <div>Product Origin: {{ product?.origin }}</div>
-    <div>Reviews here</div>
+    <div>Price: {{ product?.price }}</div>
     <div>Tags: {{ product?.tags.map((tag) => tag.word).join(", ") }}</div>
     <div>
       Quantity:<input type="number" v-model.number="quantity" min="1" />
@@ -37,19 +37,26 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, onMounted, ref } from "vue";
+import { Ref, onMounted, ref, watchEffect } from "vue";
 import { Product, Review } from "../../../server/data";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
 const productId = ref(route.params.productId);
+// const productId = "1";
 const product: Ref<Product | null> = ref(null);
 const reviews: Ref<Review[]> = ref([]);
 const quantity = ref(1);
 
+// watchEffect(() => {
+//   if (productId.value) {
+//     fetchProduct();
+//   }
+// });
+
 async function fetchProduct() {
   try {
-    const response = await fetch(`/api/get-product/${productId}`);
+    const response = await fetch(`/api/get-product/${productId.value}`);
     if (!response.ok) {
       throw new Error("Failed to fetch product");
     }
@@ -58,19 +65,19 @@ async function fetchProduct() {
     console.error("Error fetching product:", error);
   }
 
-  const reviewResponse = await fetch(`/api/get-reviews/${productId}`);
+  const reviewResponse = await fetch(`/api/get-reviews/${productId.value}`);
   reviews.value = await reviewResponse.json();
 }
 
 async function handleAddCartClick() {
   // TODO: Error handling for invaliud quantity --> backend?
-  await fetch("/api/user/add-cart", {
+  await fetch(`/api/user/add-cart:${productId.value}`, {
     headers: {
       "Content-Type": "application/json",
     },
     method: "PUT",
     body: JSON.stringify({
-      quantity: quantity.valueOf,
+      quantity: quantity.value,
     }),
   });
 }

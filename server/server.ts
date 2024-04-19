@@ -9,6 +9,7 @@ import {
   Order,
   Product,
   Review,
+  User,
   possibleIngredients,
 } from "./data";
 import session from "express-session";
@@ -38,6 +39,7 @@ let orders: Collection;
 let products: Collection<Product>;
 let reviews: Collection<Review>;
 let carts: Collection<Cart>;
+let users: Collection<User>;
 
 // set up Express
 const app = express();
@@ -451,6 +453,7 @@ client.connect().then(async () => {
   products = db.collection("products");
   reviews = db.collection("reviews");
   carts = db.collection("carts");
+  users = db.collection("users");
 
   passport.use(
     "disable-security",
@@ -487,10 +490,40 @@ client.connect().then(async () => {
 
     async function verify(tokenSet: any, userInfo: any, done: any) {
       logger.info("oidc " + JSON.stringify(userInfo));
+
+      // const username = userInfo.preferred_username;
+      // const email = userInfo.email;
+
+      // try {
+      //   // check if there is a registered user with email -- users cannot share same emails
+      //   let user = await db.collection("users").findOne({ email });
+
+      //   if (!user) {
+      //     const newUser = {
+      //       username: username,
+      //       name: userInfo.name,
+      //       email: email,
+      //       address: "",
+      //     };
+      //     // add new user to db
+      //     const { insertedId } = await db
+      //       .collection("users")
+      //       .insertOne(newUser);
+      //     user = { ...newUser, _id: insertedId };
+
+      //     logger.info("New user created: " + username);
+      //   }
+      //   // if user is found in our db, let the user login -- do nothing
+
+      //   return done(null, userInfo);
+      // } catch (error) {
+      //   logger.error("Error in creating new user from OIDC in verify");
+      //   return done(error);
+      // }
       // console.log('userInfo', userInfo)
-      userInfo.roles = userInfo.groups.includes(OPERATOR_GROUP_ID)
-        ? ["operator"]
-        : ["customer"];
+      // userInfo.roles = userInfo.groups.includes(OPERATOR_GROUP_ID)
+      //   ? ["operator"]
+      //   : ["customer"];
       return done(null, userInfo);
     }
 
@@ -498,6 +531,6 @@ client.connect().then(async () => {
   }
 
   app.listen(port, () => {
-    console.log(`Smoothie server listening on port ${port}`);
+    console.log(`Menya server listening on port ${port}`);
   });
 });
