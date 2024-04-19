@@ -24,8 +24,8 @@ stages: # List of stages for jobs, and their order of execution
 
 build-job: # This job runs in the build stage, which runs first.
   stage: build
-  rules:
-    - when: manual
+  # rules:
+  #   - when: manual
   script:
     - cd ui
     - docker build -t cs590-final-ui .
@@ -54,8 +54,8 @@ build-job: # This job runs in the build stage, which runs first.
 deploy-job: # This job runs in the deploy stage.
   stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
   # environment: production
-  rules:
-    - when: manual
+  # rules:
+  #   - when: manual
   script:
     - kubectl create -f k8s/
     - sleep 5
@@ -64,8 +64,8 @@ deploy-job: # This job runs in the deploy stage.
 
 mongo_setup:
   stage: deploy
-  rules:
-    - when: manual
+  # rules:
+  #   - when: manual
   script: kubectl port-forward service/db 27017/27017 &
     MONGO_PORT_FORWARD_PID=$!
     echo "$MONGO_PORT_FORWARD_PID"
@@ -78,5 +78,5 @@ cleanup:
   stage: cleanup
   script:
     - kubectl delete -f k8s/
-  rules:
-    - when: manual
+  # rules:
+  #   - when: manual
