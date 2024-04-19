@@ -79,4 +79,4 @@ cleanup:
   script:
     - kubectl delete -f k8s/
   rules:
-    -when: manual
+    - when: manual
