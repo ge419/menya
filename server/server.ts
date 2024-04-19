@@ -29,7 +29,8 @@ const passportStrategies = [
 ];
 
 // set up Mongo
-const mongoUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+// const mongoUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+const mongoUrl = process.env.MONGO_URL || "mongodb://db";
 const client = new MongoClient(mongoUrl);
 let db: Db;
 let orders: Collection;
@@ -51,7 +52,8 @@ app.use(expressPinoLogger({ logger }));
 // set up CORS
 app.use(
   cors({
-    origin: "http://127.0.0.1:8192",
+    // origin: "http://127.0.0.1:8192",
+    origin: "http://localhost:8192",
     credentials: true,
   })
 );
@@ -65,7 +67,8 @@ app.use(
     cookie: { secure: false },
 
     store: MongoStore.create({
-      mongoUrl: "mongodb://127.0.0.1:27017",
+      // mongoUrl: "mongodb://127.0.0.1:27017",
+      mongoUrl: "mongodb://db",
       ttl: 14 * 24 * 60 * 60, // 14 days
     }),
   })
@@ -359,7 +362,7 @@ client.connect().then(async () => {
     const params = {
       scope: "openid profile email",
       nonce: generators.nonce(),
-      redirect_uri: `http://${HOST}:8192/api/login-callback`,
+      redirect_uri: `http://${HOST}:31002/api/login-callback`,
       state: generators.state(),
 
       // this forces a fresh login screen every time
