@@ -165,13 +165,75 @@ app.get("/api/get-reviews/:productId", async (req, res) => {
   res.status(200).json(productReviews);
 });
 
+// get current cart
+app.get("/api/user/cart", checkAuthenticated, async (req, res) => {
+  const userId = req.user.preferred_username;
+
+  // TODO: validate customerId
+
+  const cart = await carts.findOne({ status: "draft", userId });
+  res.status(200).json(cart || { userId, products: [] });
+});
+
+// update current cart -- used in ShoppingCart
+app.put("/api/user/update-cart", checkAuthenticated, async (req, res) => {
+  const { products } = req.body; // Assuming that the body includes a `products` array
+
+  // Validate products array
+  if (!Array.isArray(products)) {
+    return res.status(400).json({ error: "Invalid products data" });
+  }
+
+  // Validate each product in the array (if necessary, ensure they have valid IDs, quantities, etc.)
+  for (const product of products) {
+    if (
+      !product._id ||
+      typeof product.quantity !== "number" ||
+      product.quantity < 1
+    ) {
+      return res.status(400).json({ error: "Invalid product data" });
+    }
+    // Optionally, check if products exist in the database
+  }
+
+  try {
+    const result = await orders.updateOne(
+      {
+        userId: req.user.preferred_username, // Using the authenticated user's ID
+        state: "draft",
+      },
+      {
+        $set: {
+          products: products, // Update the products array in the order
+        },
+      },
+      {
+        upsert: true, // Create a new draft order if one doesn't exist
+      }
+    );
+
+    if (result.matchedCount === 0 && result.upsertedCount === 0) {
+      throw new Error(
+        "No document was updated and no new document was upserted"
+      );
+    }
+
+    res
+      .status(200)
+      .json({ status: "ok", message: "Draft order updated successfully" });
+  } catch (error) {
+    console.error("Failed to update draft order:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // add item to cart
 app.put(
   "/api/user/add-cart/:productId",
   checkAuthenticated,
   async (req, res) => {
     const { productId } = req.params;
-    const { quantity } = req.body; // Ensure quantity is provided in the request
+    const { quantity } = req.body;
 
     if (!quantity || quantity < 1) {
       return res.status(400).json({ error: "Invalid quantity" });
@@ -185,7 +247,6 @@ app.put(
 
       const userId = req.user.preferred_username; // Assuming this is your authenticated user's ID
 
-      // Attempt to update the cart with the product or create a new cart
       const updateResult = await carts.updateOne(
         {
           userId: userId,
@@ -199,8 +260,6 @@ app.put(
       );
 
       if (updateResult.matchedCount === 0) {
-        // No existing product matched, so we either need to add the product to an existing cart
-        // or create a new cart if it didn't exist
         await carts.updateOne(
           { userId: userId, status: "draft" },
           {

@@ -27,6 +27,17 @@ function handleProductClick() {
   router.push(`/product/${props.product._id}`);
 }
 
-// Add product to cart of current user
-function handleAddOneCartClick() {}
+// Add one product to cart of current user
+async function handleAddOneCartClick() {
+  // TODO: Error handling for invaliud quantity --> backend?
+  await fetch("/api/user/add-cart", {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+    body: JSON.stringify({
+      quantity: 1,
+    }),
+  });
+}
 </script>

@@ -38,6 +38,7 @@ const products: Product[] = [
   {
     _id: "1",
     name: "Shin Ramen",
+    price: 5.99,
     origin: "Korea",
     company: "Nongshim",
     avgRating: 4.5,
@@ -80,6 +81,10 @@ async function main() {
   console.log(
     "inserting products",
     await db.collection("products").insertMany(products as any)
+  );
+  db.collection("carts").createIndex(
+    { userId: 1 },
+    { unique: true, partialFilterExpression: { status: "draft" } }
   );
 
   process.exit(0);

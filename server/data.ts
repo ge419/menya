@@ -25,21 +25,6 @@ export interface Operator {
   name: string;
 }
 
-export interface Product {
-  _id: string;
-  name: string;
-  origin: string;
-  company: string;
-  avgRating: number;
-  description: string;
-  tags: Tag[];
-  // reviews: Review[];
-}
-export interface CartProduct {
-  product: Product;
-  quantity: number;
-}
-
 export interface Tag {
   word: string;
 }
@@ -52,6 +37,23 @@ export interface Review {
   buyAgain: boolean;
   text: string;
   tags: Tag[];
+}
+
+export interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  origin: string;
+  company: string;
+  avgRating: number;
+  description: string;
+  tags: Tag[];
+  // reviews: Review[];
+}
+
+export interface CartProduct {
+  product: Product;
+  quantity: number;
 }
 
 export interface Cart {
