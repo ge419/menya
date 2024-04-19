@@ -4,6 +4,7 @@ import pino from "pino";
 import expressPinoLogger from "express-pino-logger";
 import { Collection, Db, MongoClient, ObjectId } from "mongodb";
 import {
+  Cart,
   DraftOrder,
   Order,
   Product,
@@ -36,6 +37,7 @@ let db: Db;
 let orders: Collection;
 let products: Collection<Product>;
 let reviews: Collection<Review>;
+let carts: Collection<Cart>;
 
 // set up Express
 const app = express();
@@ -142,8 +144,6 @@ app.get("/api/all-products", async (req, res) => {
   console.log("Retrieve all products");
 });
 
-// Move to products page
-
 // Retrieve product details
 app.get("/api/get-product/:productId", async (req, res) => {
   const _id = req.params.productId;
@@ -159,12 +159,68 @@ app.get("/api/get-product/:productId", async (req, res) => {
 });
 
 // Query product reviews
-
 app.get("/api/get-reviews/:productId", async (req, res) => {
   const productId = req.params.productId;
   const productReviews = await reviews.find({ productId: productId }).toArray();
   res.status(200).json(productReviews);
 });
+
+// add item to cart
+app.put(
+  "/api/user/add-cart/:productId",
+  checkAuthenticated,
+  async (req, res) => {
+    const { productId } = req.params;
+    const { quantity } = req.body; // Ensure quantity is provided in the request
+
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({ error: "Invalid quantity" });
+    }
+
+    try {
+      const product = await products.findOne({ _id: productId });
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const userId = req.user.preferred_username; // Assuming this is your authenticated user's ID
+
+      // Attempt to update the cart with the product or create a new cart
+      const updateResult = await carts.updateOne(
+        {
+          userId: userId,
+          status: "draft",
+          "products.product": productId,
+        },
+        {
+          $inc: { "products.$.quantity": quantity },
+        },
+        { upsert: true }
+      );
+
+      if (updateResult.matchedCount === 0) {
+        // No existing product matched, so we either need to add the product to an existing cart
+        // or create a new cart if it didn't exist
+        await carts.updateOne(
+          { userId: userId, status: "draft" },
+          {
+            $push: { products: { product: product, quantity: quantity } },
+            $setOnInsert: { userId: userId, status: "draft" },
+          },
+          { upsert: true }
+        );
+      }
+
+      res.status(200).json({
+        status: "ok",
+        message: "Product added or updated in cart successfully.",
+      });
+    } catch (error) {
+      console.error("Error adding or updating product in cart:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 // Retrieve user information
 app.get("/api/get-user-info");
@@ -335,6 +391,7 @@ client.connect().then(async () => {
   orders = db.collection("orders");
   products = db.collection("products");
   reviews = db.collection("reviews");
+  carts = db.collection("carts");
 
   passport.use(
     "disable-security",

@@ -35,6 +35,10 @@ export interface Product {
   tags: Tag[];
   // reviews: Review[];
 }
+export interface CartProduct {
+  product: Product;
+  quantity: number;
+}
 
 export interface Tag {
   word: string;
@@ -50,9 +54,10 @@ export interface Review {
   tags: Tag[];
 }
 
-export interface Order {
+export interface Cart {
   _id: string;
   userId: string;
+  products: CartProduct[];
   status: "draft" | "paid";
-  totalCost: number;
+  // totalCost: number;
 }

@@ -15,7 +15,7 @@
     <div>
       Quantity:<input type="number" v-model.number="quantity" min="1" />
     </div>
-    <b-button @click="add" class="mb-2">Add to Cart</b-button>
+    <b-button @click="handleAddCartClick" class="mb-2">Add to Cart</b-button>
 
     <div>
       <h3>Reviews</h3>
@@ -39,11 +39,13 @@
 <script setup lang="ts">
 import { Ref, onMounted, ref } from "vue";
 import { Product, Review } from "../../../server/data";
+import { useRoute } from "vue-router";
 
-const productId = "1";
+const route = useRoute();
+const productId = ref(route.params.productId);
 const product: Ref<Product | null> = ref(null);
 const reviews: Ref<Review[]> = ref([]);
-const quantity = ref(1); // Default quantity
+const quantity = ref(1);
 
 async function fetchProduct() {
   try {
@@ -58,6 +60,19 @@ async function fetchProduct() {
 
   const reviewResponse = await fetch(`/api/get-reviews/${productId}`);
   reviews.value = await reviewResponse.json();
+}
+
+async function handleAddCartClick() {
+  // TODO: Error handling for invaliud quantity --> backend?
+  await fetch("/api/user/add-cart", {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+    body: JSON.stringify({
+      quantity: quantity.valueOf,
+    }),
+  });
 }
 
 onMounted(fetchProduct);

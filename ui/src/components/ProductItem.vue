@@ -6,7 +6,7 @@
     class="mb-2"
     @click="handleProductClick"
   >
-    <b-button @click="handleAddCartClick" variant="primary"
+    <b-button @click="handleAddOneCartClick" variant="primary"
       >Add to Cart</b-button
     >
   </b-card>
@@ -28,5 +28,5 @@ function handleProductClick() {
 }
 
 // Add product to cart of current user
-function handleAddCartClick() {}
+function handleAddOneCartClick() {}
 </script>
