@@ -66,8 +66,8 @@ deploy-job: # This job runs in the deploy stage.
 mongo_setup:
   stage: setup
   script:
-    - echo "Installing dependencies..."
-    - npm install
+    # - echo "Installing dependencies..."
+    # - npm install
     - echo "Starting port-forward..."
     - kubectl port-forward service/db 27017:27017 & 
     - MONGO_PORT_FORWARD_PID=$!
