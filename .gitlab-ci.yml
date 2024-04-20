@@ -71,13 +71,9 @@ mongo_port:
     MONGO_PORT_FORWARD_PID=$!
     echo "$MONGO_PORT_FORWARD_PID"
     sleep 5
+    cd server
+    npm run setup
     kill $MONGO_PORT_FORWARD_PID
-    # cd server
-    # npm run setup
-
-mongo_setup:
-  stage: setup
-  script: cd server npm run setup
 
 cleanup:
   stage: cleanup
