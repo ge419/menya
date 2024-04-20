@@ -18,8 +18,9 @@
 
 stages: # List of stages for jobs, and their order of execution
   - build
-  # - test
   - deploy
+  - setup
+  - test
   - cleanup
 
 build-job: # This job runs in the build stage, which runs first.
@@ -62,7 +63,7 @@ deploy-job: # This job runs in the deploy stage.
     - echo "Deploying application..."
     - echo "Application successfully deployed."
 
-mongo_setup:
+mongo_port:
   stage: deploy
   # rules:
   #   - when: manual
@@ -70,9 +71,13 @@ mongo_setup:
     MONGO_PORT_FORWARD_PID=$!
     echo "$MONGO_PORT_FORWARD_PID"
     sleep 5
-    cd server
-    npm run setup
     kill $MONGO_PORT_FORWARD_PID
+    # cd server
+    # npm run setup
+
+mongo_setup:
+  stage: setup
+  script: cd server npm run setup
 
 # cleanup:
 #   stage: cleanup
