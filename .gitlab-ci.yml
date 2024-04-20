@@ -80,7 +80,6 @@ mongo_setup:
     - npm run setup
     - echo "Setup complete, killing port-forward..."
     - kill $MONGO_PORT_FORWARD_PID
-    - wait $MONGO_PORT_FORWARD_PID 
     - echo "Port-forward stopped."
 
 
