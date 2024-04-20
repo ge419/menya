@@ -15,7 +15,15 @@
     <!-- <div>Previously Purchased?</div> -->
     <div>Product Origin: {{ product?.origin }}</div>
     <div>Price: {{ product?.price }}</div>
-    <div>Tags: {{ product?.tags.map((tag) => tag.word).join(", ") }}</div>
+    <div>
+      <h3>Top Tags:</h3>
+      <ul v-if="product?.tags.length > 0">
+        <li v-for="tag in product.tags" :key="tag.word">
+          {{ tag.word }} ({{ tag.count }})
+        </li>
+      </ul>
+      <div v-else>No tags available.</div>
+    </div>
     <div>
       Quantity:<input type="number" v-model.number="quantity" min="1" />
     </div>
@@ -67,20 +75,37 @@ async function fetchProduct() {
     const productData = await response.json();
     product.value = productData;
 
-    // Fetch reviews and calculate average rating
+    // Fetch reviews, calculate average rating, and extract tags
     const reviewResponse = await fetch(`/api/get-reviews/${productId.value}`);
     if (!reviewResponse.ok) {
       throw new Error("Failed to fetch reviews");
     }
     reviews.value = await reviewResponse.json();
+
+    // Calculate average rating
     if (reviews.value.length > 0) {
       const totalRating = reviews.value.reduce(
         (acc, review) => acc + review.rating,
         0
       );
       product.value.avgRating = (totalRating / reviews.value.length).toFixed(1); // Keep one decimal place
+
+      // Process tags
+      const tagCounts = reviews.value.reduce((acc, review) => {
+        review.tags.forEach((tag) => {
+          acc[tag.word] = (acc[tag.word] || 0) + 1;
+        });
+        return acc;
+      }, {});
+
+      // Sort tags by frequency and take the top 5
+      product.value.tags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map((item) => ({ word: item[0], count: item[1] }));
     } else {
       product.value.avgRating = "No ratings";
+      product.value.tags = [];
     }
   } catch (error) {
     console.error("Error fetching product details:", error);
@@ -136,5 +161,16 @@ onMounted(fetchProduct);
 
 .review-text {
   font-style: italic;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  background-color: #eee;
+  margin-bottom: 5px;
+  padding: 5px;
+  border-radius: 4px;
 }
 </style>

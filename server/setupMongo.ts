@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { Product, Review } from "./data";
+import { Cart, Product, Review } from "./data";
 
 // Connection URL
 const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
@@ -16,7 +16,10 @@ const reviews: Review[] = [
     text: "amazing ramen!",
     tags: [
       {
-        word: "sweet",
+        word: "spicy",
+      },
+      {
+        word: "korean",
       },
     ],
   },
@@ -43,14 +46,14 @@ const products: Product[] = [
     origin: "Korea",
     company: "Nongshim",
     description: "Spicy ramen ranked #1 in Korea",
-    tags: [
-      {
-        word: "spicy",
-      },
-      {
-        word: "korean",
-      },
-    ],
+    // tags: [
+    //   {
+    //     word: "spicy",
+    //   },
+    //   {
+    //     word: "korean",
+    //   },
+    // ],
   },
   {
     _id: "2",
@@ -59,17 +62,17 @@ const products: Product[] = [
     origin: "Korea",
     company: "Ottogi",
     description: "Spicy ramen famous in Korea",
-    tags: [
-      {
-        word: "spicy",
-      },
-      {
-        word: "korean",
-      },
-      {
-        word: "sweet",
-      },
-    ],
+    // tags: [
+    //   {
+    //     word: "spicy",
+    //   },
+    //   {
+    //     word: "korean",
+    //   },
+    //   {
+    //     word: "sweet",
+    //   },
+    // ],
   },
   {
     _id: "3",
@@ -89,6 +92,28 @@ const products: Product[] = [
         word: "sweet",
       },
     ],
+  },
+];
+
+const orders: Cart[] = [
+  {
+    _id: "123",
+    userId: "test",
+    products: [
+      {
+        product: {
+          name: "Test",
+          price: 10,
+          _id: "test",
+          origin: "test",
+          company: "test",
+          description: "test",
+        },
+        quantity: 2,
+      },
+    ],
+    status: "paid",
+    totalCost: 10,
   },
 ];
 
@@ -123,6 +148,10 @@ async function main() {
   db.collection("carts").createIndex(
     { userId: 1 },
     { unique: true, partialFilterExpression: { status: "draft" } }
+  );
+  console.log(
+    "inserting test order",
+    await db.collection("carts").insertMany(orders as any)
   );
 
   process.exit(0);

@@ -49,7 +49,7 @@ export interface Product {
   company: string;
   avgRating?: number;
   description: string;
-  tags: Tag[];
+  tags?: Tag[];
   // reviews: Review[];
 }
 
@@ -59,11 +59,14 @@ export interface CartProduct {
 }
 
 export interface Cart {
-  // _id: string;
+  _id?: string;
   userId: string;
   products: CartProduct[];
   status: "draft" | "paid";
-  // totalCost: number;
+  totalCost?: number;
+  // address
+  // telephone
+  // name
 }
 
 export interface User {

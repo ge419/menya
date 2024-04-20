@@ -175,69 +175,108 @@ app.get("/api/user/cart", checkAuthenticated, async (req, res) => {
   // TODO: validate customerId
 
   const cart = await carts.findOne({ status: "draft", userId: userId });
+
+  const totalCost = cart.products.reduce(
+    (acc, { product, quantity }) => acc + product.price * quantity,
+    0
+  );
+  cart.totalCost = totalCost;
+
   res.status(200).json(cart || { userId, products: [] });
 });
 
 // update current cart -- used in ShoppingCart
 app.put("/api/user/update-cart", checkAuthenticated, async (req, res) => {
-  const cartData = req.body; // This should be a complete Cart object from the client
+  const { cartItems } = req.body;
 
-  // Validate the cart data, especially the products array
-  if (
-    !cartData ||
-    !Array.isArray(cartData.products) ||
-    cartData.products.some(
-      (product: CartProduct) =>
-        !product.product ||
-        typeof product.quantity !== "number" ||
-        product.quantity < 1
-    )
-  ) {
-    return res.status(400).json({ error: "Invalid cart data" });
+  console.log("Received cart items:", cartItems);
+  if (!Array.isArray(cartItems)) {
+    return res.status(400).json({ error: "Invalid cart items data" });
   }
 
   try {
-    const userId = req.user.preferred_username; // Authenticated user's ID
+    const userId = req.user.preferred_username;
+    const cart = await carts.findOne({ userId: userId, status: "draft" });
 
-    // Find the existing draft cart
-    const existingCart = await carts.findOne({
-      userId: userId,
-      status: "draft",
-    });
+    if (!cart) {
+      return res.status(404).json({ error: "No draft cart found" });
+    }
 
-    if (existingCart) {
-      // Update the existing draft cart
-      const result = await carts.updateOne(
-        { _id: existingCart._id },
-        {
-          $set: { products: cartData.products }, // Update the products array directly from the Cart object
-        }
-      );
+    // Prepare for updating the cart with full product details
+    let totalCost = 0;
+    const updatedCartItems = [];
 
-      // Respond success even if no fields were actually modified (the client sent the same data as stored)
-      res.status(200).json({
-        status: "ok",
-        message: "Cart updated successfully, no changes were made.",
+    for (const item of cartItems) {
+      const product = await products.findOne({ _id: item._id });
+      if (!product) {
+        return res
+          .status(404)
+          .json({ error: "Product not found: " + item._id });
+      }
+      totalCost += product.price * item.quantity;
+      updatedCartItems.push({
+        product: product, // Store the whole product object instead of just the ID
+        quantity: item.quantity,
       });
-    } else {
-      // No existing draft cart found, so create a new one
-      await carts.insertOne({
+    }
+
+    // Update the cart items and total cost in the cart
+    const updateResult = await carts.updateOne(
+      { _id: cart._id },
+      {
+        $set: {
+          products: updatedCartItems,
+          totalCost: totalCost,
+        },
+      }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      throw new Error("Failed to update the cart");
+    }
+
+    res
+      .status(200)
+      .json({ status: "ok", message: "Cart updated successfully." });
+  } catch (error) {
+    console.error("Error updating cart:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+app.post(
+  "/api/user/create-empty-cart",
+  checkAuthenticated,
+  async (req, res) => {
+    const userId = req.user.preferred_username;
+
+    try {
+      // Check if a draft cart already exists to prevent duplicates
+      const existingCart = await carts.findOne({
         userId: userId,
         status: "draft",
-        products: cartData.products, // Directly set the products array from the Cart object
+      });
+      if (existingCart) {
+        return res.status(400).json({ error: "Draft cart already exists" });
+      }
+
+      // Create a new empty draft cart
+      await carts.insertOne({
+        userId: userId,
+        products: [],
+        status: "draft",
+        totalCost: 0,
       });
 
       res
         .status(201)
-        .json({ status: "ok", message: "New cart created successfully" });
+        .json({ status: "ok", message: "New empty draft cart created." });
+    } catch (error) {
+      console.error("Error creating a new empty cart:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-  } catch (error) {
-    console.error("Error processing cart update:", error);
-    res
-      .status(500)
-      .json({ error: "Internal server error", details: error.message });
   }
-});
+);
 
 // add item to cart,
 app.put(
@@ -313,30 +352,27 @@ app.put(
 );
 
 app.put("/api/customer/pay-cart", checkAuthenticated, async (req, res) => {
-  const userId = req.user.preferred_username;
+  const { status } = req.body;
 
-  try {
-    // Find the draft cart for the user and update its status to 'paid'
-    const updateResult = await carts.updateOne(
-      { userId: userId, status: "draft" },
-      { $set: { status: "paid" } }
-    );
-
-    if (updateResult.matchedCount === 0) {
-      return res.status(404).json({ error: "No draft cart found to pay for" });
+  const result = await carts.updateOne(
+    {
+      userId: req.user.preferred_username,
+      status: "draft",
+    },
+    {
+      $set: { status: "paid" },
     }
+  );
 
-    if (updateResult.modifiedCount === 0) {
-      return res
-        .status(400)
-        .json({ error: "Cart is already paid or update failed" });
-    }
-
-    res.status(200).json({ message: "Cart paid successfully" });
-  } catch (error) {
-    console.error("Error processing payment:", error);
-    res.status(500).json({ error: "Internal server error" });
+  if (result.modifiedCount === 0) {
+    return res
+      .status(400)
+      .json({ error: "No draft cart available or already processed" });
   }
+
+  res
+    .status(200)
+    .json({ status: "ok", message: "Payment processed successfully" });
 });
 
 // Retrieve user information, confirmed working
@@ -383,6 +419,59 @@ app.put("/api/user/update-address", checkAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("Update address error:", error);
     res.status(500).json({ message: "Failed to update address" });
+  }
+});
+
+app.put(
+  "/api/user/update-cart-address",
+  checkAuthenticated,
+  async (req, res) => {
+    const userId = req.user.preferred_username;
+    const { address } = req.body;
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+    try {
+      const updateResult = await carts.updateOne(
+        { userId: userId, status: "draft" },
+        { $set: { address: address } }
+      );
+      if (!updateResult.matchedCount) {
+        return res
+          .status(404)
+          .json({ error: "No draft cart found for this user." });
+      }
+      res
+        .status(200)
+        .json({ status: "ok", message: "Cart address updated successfully." });
+    } catch (error) {
+      console.error("Error updating cart address:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+app.get("/api/user/paid-orders", checkAuthenticated, async (req, res) => {
+  const userId = req.user.preferred_username;
+
+  try {
+    const paidOrders = await carts
+      .find({
+        userId: userId,
+        status: "paid",
+      })
+      .toArray();
+
+    if (!paidOrders) {
+      return res
+        .status(404)
+        .json({ message: "No paid orders found for this user" });
+    }
+
+    res.status(200).json(paidOrders);
+  } catch (error) {
+    console.error("Failed to retrieve paid orders:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -619,6 +708,13 @@ client.connect().then(async () => {
 
           logger.info("New user created: " + username);
           console.log("userInfo", userInfo);
+
+          await db.collection("carts").insertOne({
+            userId: username,
+            products: [],
+            status: "draft",
+            totalCost: 0,
+          });
         }
         // if user is found in our db, let the user login -- do nothing
 

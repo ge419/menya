@@ -23,34 +23,53 @@
           }}
         </p>
       </div>
-      <h2>Total: ${{ total.toFixed(2) }}</h2>
+      <h2>Total: ${{ cart.totalCost.toFixed(2) }}</h2>
     </div>
     <div v-else>
       <p>Your cart is empty.</p>
     </div>
-    <h3>Deliver to: {{ user.address }}</h3>
+    <h3>Deliver to:</h3>
+    <div v-if="!isEditingAddress">
+      {{ profile?.address || "No address provided. Please add one." }}
+      <b-button @click="toggleEditAddress" class="mb-2">Edit Address</b-button>
+    </div>
+    <div v-else>
+      <input
+        v-model="editableAddress"
+        class="form-control mb-2"
+        placeholder="Enter your address here."
+        required
+      />
+      <b-button @click="saveAddress" class="mb-2">Save Address</b-button>
+    </div>
+    <b-button @click="confirm" class="mb-2">Confirm Cart</b-button>
     <b-button @click="pay" class="mb-2">Pay</b-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Ref, computed, inject, ref, watch } from "vue";
-import { Cart } from "../../../server/data";
+import { Ref, inject, ref, watch } from "vue";
+import { Cart, User } from "../../../server/data";
 // check if this works
 const user: Ref<any> = inject("user")!;
 const cart: Ref<Cart | null> = ref(null);
+const profile: Ref<User | null> = ref(null);
+const isEditingAddress = ref(false);
+const editableAddress = ref("");
 
-const total = computed(() => {
-  if (!cart.value || !cart.value.products) return 0; // Check if cart or cart.products is null
-  return cart.value.products.reduce(
-    (acc, cartProduct) =>
-      acc + cartProduct.product.price * cartProduct.quantity,
-    0
-  );
-});
+// const total = computed(() => {
+//   if (!cart.value || !cart.value.products) return 0; // Check if cart or cart.products is null
+//   return cart.value.products.reduce(
+//     (acc, cartProduct) =>
+//       acc + cartProduct.product.price * cartProduct.quantity,
+//     0
+//   );
+// });
 
 async function refresh() {
   try {
+    const profileResponse = await fetch("/api/user/profile");
+    profile.value = await profileResponse.json();
     const cartResponse = await fetch("/api/user/cart");
     if (!cartResponse.ok) {
       throw new Error("Failed to fetch cart");
@@ -64,7 +83,7 @@ async function refresh() {
 
 watch(user, refresh, { immediate: true });
 
-async function pay() {
+async function confirm() {
   if (!cart.value || !Array.isArray(cart.value.products)) {
     console.error("Cart data is invalid or empty.");
     alert("Your cart is empty or has invalid data.");
@@ -72,26 +91,33 @@ async function pay() {
   }
 
   try {
-    // Prepare the products array for the API call
-    const productsForApi = cart.value.products.map((p) => ({
+    const cartItemsForApi = cart.value.products.map((p) => ({
       _id: p.product._id,
       quantity: p.quantity,
     }));
+    console.log("Sending to server:", cartItemsForApi);
 
-    // Update the cart as the 'save' functionality would
     const saveResponse = await fetch("/api/user/update-cart", {
       headers: {
         "Content-Type": "application/json",
       },
       method: "PUT",
-      body: JSON.stringify({ products: productsForApi }),
+      body: JSON.stringify({ cartItems: cartItemsForApi }),
     });
 
     if (!saveResponse.ok) {
       throw new Error("Failed to update cart");
     }
 
-    // If the save/update is successful, change the status to 'paid'
+    alert("Cart updated successfully!");
+  } catch (error) {
+    console.error("Error updating cart:", error);
+    alert(`Error updating cart: ${error.message}`);
+  }
+}
+
+async function pay() {
+  try {
     const payResponse = await fetch("/api/customer/pay-cart", {
       headers: {
         "Content-Type": "application/json",
@@ -104,11 +130,49 @@ async function pay() {
       throw new Error("Failed to process payment");
     }
 
+    // Create a new empty cart after successful payment
+    const newCartResponse = await fetch("/api/user/create-empty-cart", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!newCartResponse.ok) {
+      throw new Error("Failed to create a new empty cart");
+    }
+
     alert("Payment successful!");
     refresh(); // Assuming you may want to clear the cart or update the UI
   } catch (error) {
     console.error("Payment processing error:", error);
     alert(`Payment processing error: ${error.message}`);
+  }
+}
+
+function toggleEditAddress() {
+  isEditingAddress.value = !isEditingAddress.value;
+}
+
+async function saveAddress() {
+  try {
+    const response = await fetch("/api/user/update-address", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ address: editableAddress.value }),
+    });
+    if (response.ok) {
+      alert("Address updated successfully");
+      profile.value!.address = editableAddress.value; // Update local profile address
+      isEditingAddress.value = false;
+    } else {
+      throw new Error("Failed to update address");
+    }
+  } catch (error) {
+    console.error("Error updating address:", error);
+    alert(`Error updating address: ${error.message}`);
   }
 }
 </script>
