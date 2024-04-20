@@ -68,6 +68,7 @@ mongo_setup:
   script:
     # - echo "Installing dependencies..."
     # - npm install
+    - echo "export PATH=/opt/homebrew/bin:$PATH" >> ~/.bash_profile
     - echo "Starting port-forward..."
     - kubectl port-forward service/db 27017:27017 & 
     - MONGO_PORT_FORWARD_PID=$!
