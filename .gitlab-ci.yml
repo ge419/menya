@@ -67,7 +67,8 @@ mongo_setup:
   stage: setup
   script:
     - echo "Starting port-forward..."
-    - kubectl port-forward service/db 27017:27017 & MONGO_PORT_FORWARD_PID=$!
+    - kubectl port-forward service/db 27017:27017 & 
+    - MONGO_PORT_FORWARD_PID=$!
     - echo "$MONGO_PORT_FORWARD_PID"
     - sleep 5  
     - echo "Running setup script..."
