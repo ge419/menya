@@ -63,8 +63,8 @@ deploy-job: # This job runs in the deploy stage.
     - echo "Deploying application..."
     - echo "Application successfully deployed."
 
-mongo_port:
-  stage: deploy
+mongo_setup:
+  stage: setup
   # rules:
   #   - when: manual
   script: kubectl port-forward service/db 27017:27017 &
