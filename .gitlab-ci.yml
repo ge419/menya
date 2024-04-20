@@ -74,9 +74,9 @@ mongo_setup:
     npm run setup
     kill $MONGO_PORT_FORWARD_PID
 
-cleanup:
-  stage: cleanup
-  script:
-    - kubectl delete -f k8s/
+# cleanup:
+#   stage: cleanup
+#   script:
+#     - kubectl delete -f k8s/
   # rules:
   #   - when: manual
