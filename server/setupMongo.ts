@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { Operator, Customer, Product, Review, Order, Tag } from "./data";
+import { Product, Review } from "./data";
 
 // Connection URL
 const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
@@ -8,7 +8,7 @@ const client = new MongoClient(url);
 
 const reviews: Review[] = [
   {
-    _id: "jim",
+    _id: "review1",
     userId: "Jim",
     productId: "1",
     rating: 5,
@@ -21,7 +21,7 @@ const reviews: Review[] = [
     ],
   },
   {
-    _id: "mary",
+    _id: "review2",
     userId: "Mary",
     productId: "1",
     rating: 4,
@@ -42,7 +42,6 @@ const products: Product[] = [
     price: 5.99,
     origin: "Korea",
     company: "Nongshim",
-    avgRating: 4.5,
     description: "Spicy ramen ranked #1 in Korea",
     tags: [
       {
@@ -59,7 +58,6 @@ const products: Product[] = [
     price: 4.99,
     origin: "Korea",
     company: "Ottogi",
-    avgRating: 4.6,
     description: "Spicy ramen famous in Korea",
     tags: [
       {
@@ -79,7 +77,6 @@ const products: Product[] = [
     price: 4.99,
     origin: "Korea",
     company: "Ottogi",
-    avgRating: 4.3,
     description: "Non-spicy ramen from Korea",
     tags: [
       {

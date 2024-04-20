@@ -5,6 +5,7 @@ import expressPinoLogger from "express-pino-logger";
 import { Collection, Db, MongoClient, ObjectId } from "mongodb";
 import {
   Cart,
+  CartProduct,
   DraftOrder,
   Order,
   Product,
@@ -118,24 +119,24 @@ function checkAuthenticated(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function checkRole(requiredRoles: string[]) {
-  return function (req: Request, res: Response, next: NextFunction) {
-    const roles = req.user?.roles || [];
-    const hasRequiredRole = roles.some((role: string) =>
-      requiredRoles.includes(role)
-    );
-    console.log("hasRequiredRole", hasRequiredRole);
-    if (hasRequiredRole) {
-      next(); // User has one of the required roles, proceed
-    } else {
-      console.log("hasRequiredRole2", hasRequiredRole);
+// function checkRole(requiredRoles: string[]) {
+//   return function (req: Request, res: Response, next: NextFunction) {
+//     const roles = req.user?.roles || [];
+//     const hasRequiredRole = roles.some((role: string) =>
+//       requiredRoles.includes(role)
+//     );
+//     console.log("hasRequiredRole", hasRequiredRole);
+//     if (hasRequiredRole) {
+//       next(); // User has one of the required roles, proceed
+//     } else {
+//       console.log("hasRequiredRole2", hasRequiredRole);
 
-      res
-        .status(403)
-        .json({ message: "Access denied: Insufficient permissions" });
-    }
-  };
-}
+//       res
+//         .status(403)
+//         .json({ message: "Access denied: Insufficient permissions" });
+//     }
+//   };
+// }
 
 // app routes
 
@@ -173,63 +174,72 @@ app.get("/api/user/cart", checkAuthenticated, async (req, res) => {
 
   // TODO: validate customerId
 
-  const cart = await carts.findOne({ status: "draft", userId });
+  const cart = await carts.findOne({ status: "draft", userId: userId });
   res.status(200).json(cart || { userId, products: [] });
 });
 
 // update current cart -- used in ShoppingCart
 app.put("/api/user/update-cart", checkAuthenticated, async (req, res) => {
-  const { products } = req.body; // Assuming that the body includes a `products` array
+  const cartData = req.body; // This should be a complete Cart object from the client
 
-  // Validate products array
-  if (!Array.isArray(products)) {
-    return res.status(400).json({ error: "Invalid products data" });
-  }
-
-  // Validate each product in the array (if necessary, ensure they have valid IDs, quantities, etc.)
-  for (const product of products) {
-    if (
-      !product._id ||
-      typeof product.quantity !== "number" ||
-      product.quantity < 1
-    ) {
-      return res.status(400).json({ error: "Invalid product data" });
-    }
-    // Optionally, check if products exist in the database
+  // Validate the cart data, especially the products array
+  if (
+    !cartData ||
+    !Array.isArray(cartData.products) ||
+    cartData.products.some(
+      (product: CartProduct) =>
+        !product.product ||
+        typeof product.quantity !== "number" ||
+        product.quantity < 1
+    )
+  ) {
+    return res.status(400).json({ error: "Invalid cart data" });
   }
 
   try {
-    const result = await orders.updateOne(
-      {
-        userId: req.user.preferred_username, // Using the authenticated user's ID
-        state: "draft",
-      },
-      {
-        $set: {
-          products: products, // Update the products array in the order
-        },
-      },
-      {
-        upsert: true, // Create a new draft order if one doesn't exist
-      }
-    );
+    const userId = req.user.preferred_username; // Authenticated user's ID
 
-    if (result.matchedCount === 0 && result.upsertedCount === 0) {
-      throw new Error(
-        "No document was updated and no new document was upserted"
+    // Find the existing draft cart
+    const existingCart = await carts.findOne({
+      userId: userId,
+      status: "draft",
+    });
+
+    if (existingCart) {
+      // Update the existing draft cart
+      const result = await carts.updateOne(
+        { _id: existingCart._id },
+        {
+          $set: { products: cartData.products }, // Update the products array directly from the Cart object
+        }
       );
-    }
 
-    res
-      .status(200)
-      .json({ status: "ok", message: "Draft order updated successfully" });
+      // Respond success even if no fields were actually modified (the client sent the same data as stored)
+      res.status(200).json({
+        status: "ok",
+        message: "Cart updated successfully, no changes were made.",
+      });
+    } else {
+      // No existing draft cart found, so create a new one
+      await carts.insertOne({
+        userId: userId,
+        status: "draft",
+        products: cartData.products, // Directly set the products array from the Cart object
+      });
+
+      res
+        .status(201)
+        .json({ status: "ok", message: "New cart created successfully" });
+    }
   } catch (error) {
-    console.error("Failed to update draft order:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error processing cart update:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
   }
 });
 
-// add item to cart
+// add item to cart,
 app.put(
   "/api/user/add-cart/:productId",
   checkAuthenticated,
@@ -247,29 +257,48 @@ app.put(
         return res.status(404).json({ error: "Product not found" });
       }
 
-      const userId = req.user.preferred_username; // Assuming this is your authenticated user's ID
+      const userId = req.user.preferred_username;
 
-      const updateResult = await carts.updateOne(
-        {
+      // First check if the product already exists in any draft cart
+      const existingProduct = await carts.findOne({
+        userId: userId,
+        status: "draft",
+        "products.product._id": productId, // Correctly access the product id within the embedded object
+      });
+
+      if (existingProduct) {
+        // Increment quantity if product exists
+        await carts.updateOne(
+          {
+            userId: userId,
+            status: "draft",
+            "products.product._id": productId,
+          },
+          {
+            $inc: { "products.$.quantity": quantity }, // Ensure the dot notation targets the array correctly
+          }
+        );
+      } else {
+        // Find if there's an existing draft cart
+        const existingDraftCart = await carts.findOne({
           userId: userId,
           status: "draft",
-          "products.product": productId,
-        },
-        {
-          $inc: { "products.$.quantity": quantity },
-        },
-        { upsert: true }
-      );
+        });
 
-      if (updateResult.matchedCount === 0) {
-        await carts.updateOne(
-          { userId: userId, status: "draft" },
-          {
-            $push: { products: { product: product, quantity: quantity } },
-            $setOnInsert: { userId: userId, status: "draft" },
-          },
-          { upsert: true }
-        );
+        if (existingDraftCart) {
+          // Add the product to the existing draft cart
+          await carts.updateOne(
+            { _id: existingDraftCart._id },
+            { $push: { products: { product: product, quantity: quantity } } }
+          );
+        } else {
+          // Create a new draft cart with the product
+          await carts.insertOne({
+            userId: userId,
+            status: "draft",
+            products: [{ product: product, quantity: quantity }],
+          });
+        }
       }
 
       res.status(200).json({
@@ -278,13 +307,84 @@ app.put(
       });
     } catch (error) {
       console.error("Error adding or updating product in cart:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
 );
 
-// Retrieve user information
-app.get("/api/get-user-info");
+app.put("/api/customer/pay-cart", checkAuthenticated, async (req, res) => {
+  const userId = req.user.preferred_username;
+
+  try {
+    // Find the draft cart for the user and update its status to 'paid'
+    const updateResult = await carts.updateOne(
+      { userId: userId, status: "draft" },
+      { $set: { status: "paid" } }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ error: "No draft cart found to pay for" });
+    }
+
+    if (updateResult.modifiedCount === 0) {
+      return res
+        .status(400)
+        .json({ error: "Cart is already paid or update failed" });
+    }
+
+    res.status(200).json({ message: "Cart paid successfully" });
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Retrieve user information, confirmed working
+app.get("/api/user/profile", async (req, res) => {
+  try {
+    const userId = req.user.preferred_username;
+    const user = await users.findOne({ username: userId });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.json({
+      username: user.username,
+      name: user.name,
+      address: user.address,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error("Failed to retrieve user profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// update address, confirmed working
+app.put("/api/user/update-address", checkAuthenticated, async (req, res) => {
+  const userId = req.user.preferred_username;
+  const { address } = req.body;
+
+  if (!address) {
+    return res.status(400).json({ message: "Address is required" });
+  }
+
+  try {
+    const result = await users.updateOne(
+      { username: userId },
+      { $set: { address } }
+    );
+    if (result.modifiedCount === 0) {
+      res.status(404).json({ message: "User not found" });
+    } else {
+      res.json({ message: "Address updated successfully" });
+    }
+  } catch (error) {
+    console.error("Update address error:", error);
+    res.status(500).json({ message: "Failed to update address" });
+  }
+});
 
 app.post("/api/logout", (req, res, next) => {
   req.logout((err) => {
@@ -309,38 +409,38 @@ app.get("/api/possible-ingredients", checkAuthenticated, (req, res) => {
   res.status(200).json(possibleIngredients);
 });
 
-app.get(
-  "/api/customer",
-  checkAuthenticated,
-  checkRole(["customer"]),
-  async (req, res) => {
-    const _id = req.user.preferred_username;
-    logger.info("/api/customer " + _id);
-    const customer = {
-      _id,
-      name: _id,
-      orders: await orders
-        .find({ customerId: _id, state: { $ne: "draft" } })
-        .toArray(),
-    };
-    res.status(200).json(customer);
-  }
-);
+// app.get(
+//   "/api/customer",
+//   checkAuthenticated,
+//   checkRole(["customer"]),
+//   async (req, res) => {
+//     const _id = req.user.preferred_username;
+//     logger.info("/api/customer " + _id);
+//     const customer = {
+//       _id,
+//       name: _id,
+//       orders: await orders
+//         .find({ customerId: _id, state: { $ne: "draft" } })
+//         .toArray(),
+//     };
+//     res.status(200).json(customer);
+//   }
+// );
 
-app.get(
-  "/api/operator",
-  checkAuthenticated,
-  checkRole(["operator"]),
-  async (req, res) => {
-    const _id = req.user.preferred_username;
-    const operator = {
-      _id,
-      name: _id,
-      orders: await orders.find({ operatorId: _id }).toArray(),
-    };
-    res.status(200).json(operator);
-  }
-);
+// app.get(
+//   "/api/operator",
+//   checkAuthenticated,
+//   checkRole(["operator"]),
+//   async (req, res) => {
+//     const _id = req.user.preferred_username;
+//     const operator = {
+//       _id,
+//       name: _id,
+//       orders: await orders.find({ operatorId: _id }).toArray(),
+//     };
+//     res.status(200).json(operator);
+//   }
+// );
 
 app.get("/api/customer/draft-order", checkAuthenticated, async (req, res) => {
   const customerId = req.user.preferred_username;
@@ -458,6 +558,8 @@ client.connect().then(async () => {
   passport.use(
     "disable-security",
     new CustomStrategy((req, done) => {
+      console.log("Query parameters received:", req.query);
+      console.log("Result for req.query.user", req.query.user);
       if (req.query.key !== DISABLE_SECURITY) {
         console.log(
           "you must supply ?key=" +
@@ -467,8 +569,10 @@ client.connect().then(async () => {
         done(null, false);
       } else {
         done(null, {
+          name: req.query.user,
           preferred_username: req.query.user,
           roles: [].concat(req.query.role),
+          email: req.query.user,
         });
       }
     })
@@ -491,40 +595,43 @@ client.connect().then(async () => {
     async function verify(tokenSet: any, userInfo: any, done: any) {
       logger.info("oidc " + JSON.stringify(userInfo));
 
-      // const username = userInfo.preferred_username;
-      // const email = userInfo.email;
+      const username = userInfo.preferred_username;
+      const email = userInfo.email;
 
-      // try {
-      //   // check if there is a registered user with email -- users cannot share same emails
-      //   let user = await db.collection("users").findOne({ email });
+      try {
+        // check if there is a registered user with email -- users cannot share same emails
+        let user = await db.collection("users").findOne({ email });
 
-      //   if (!user) {
-      //     const newUser = {
-      //       username: username,
-      //       name: userInfo.name,
-      //       email: email,
-      //       address: "",
-      //     };
-      //     // add new user to db
-      //     const { insertedId } = await db
-      //       .collection("users")
-      //       .insertOne(newUser);
-      //     user = { ...newUser, _id: insertedId };
+        if (!user) {
+          // User not found in our db, proceed to signup
+          // return done(null, false, { newUser: true, userInfo });
+          const newUser = {
+            username: username,
+            name: userInfo.name,
+            email: email,
+            address: "",
+          };
+          // add new user to db
+          const { insertedId } = await db
+            .collection("users")
+            .insertOne(newUser);
+          user = { ...newUser, _id: insertedId };
 
-      //     logger.info("New user created: " + username);
-      //   }
-      //   // if user is found in our db, let the user login -- do nothing
+          logger.info("New user created: " + username);
+          console.log("userInfo", userInfo);
+        }
+        // if user is found in our db, let the user login -- do nothing
 
-      //   return done(null, userInfo);
-      // } catch (error) {
-      //   logger.error("Error in creating new user from OIDC in verify");
-      //   return done(error);
-      // }
+        return done(null, userInfo);
+      } catch (error) {
+        logger.error("Error in creating new user from OIDC in verify");
+        return done(error);
+      }
       // console.log('userInfo', userInfo)
       // userInfo.roles = userInfo.groups.includes(OPERATOR_GROUP_ID)
       //   ? ["operator"]
       //   : ["customer"];
-      return done(null, userInfo);
+      // return done(null, userInfo);
     }
 
     passport.use("oidc", new Strategy({ client, params }, verify));

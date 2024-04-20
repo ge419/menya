@@ -14,13 +14,11 @@ import Login from "./views/Login.vue";
 
 const routes = [
   {
-    path: "/profile/:customerId",
+    path: "/profile/:userId",
     component: UserProfile,
-    props: ({
-      params: { customerId },
-    }: {
-      params: { customerId: string };
-    }) => ({ customerId }),
+    props: ({ params: { userId } }: { params: { userId: string } }) => ({
+      userId,
+    }),
   },
   {
     path: "/shoppingCart/:customerId",

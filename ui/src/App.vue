@@ -11,10 +11,10 @@
       </b-navbar-brand>
       <b-navbar-nav>
         <b-nav-item href="/">All Products</b-nav-item>
-        <b-nav-item v-if="user?.name != null" href="/shoppingCart/${user.id}"
+        <b-nav-item v-if="user?.name != null" href="/shoppingCart/${user.name}"
           >My Orders</b-nav-item
         >
-        <b-nav-item v-if="user?.name != null" href="/profile/${user.id}"
+        <b-nav-item v-if="user?.name != null" href="/profile/${user.name}"
           >My Profile</b-nav-item
         >
         <b-nav-item v-if="user?.name == null" href="/api/login"

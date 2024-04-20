@@ -7,7 +7,11 @@
     />
     <h2>{{ product?.name }}</h2>
     <div>{{ product?.description }}</div>
-    <div>Average Rating: {{ product?.avgRating }}</div>
+    <div>
+      Average Rating:
+      {{ product?.avgRating ? product.avgRating : "No ratings yet" }}
+    </div>
+
     <!-- <div>Previously Purchased?</div> -->
     <div>Product Origin: {{ product?.origin }}</div>
     <div>Price: {{ product?.price }}</div>
@@ -37,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, onMounted, ref, watchEffect } from "vue";
+import { Ref, onMounted, ref } from "vue";
 import { Product, Review } from "../../../server/data";
 import { useRoute } from "vue-router";
 
@@ -60,18 +64,32 @@ async function fetchProduct() {
     if (!response.ok) {
       throw new Error("Failed to fetch product");
     }
-    product.value = await response.json();
-  } catch (error) {
-    console.error("Error fetching product:", error);
-  }
+    const productData = await response.json();
+    product.value = productData;
 
-  const reviewResponse = await fetch(`/api/get-reviews/${productId.value}`);
-  reviews.value = await reviewResponse.json();
+    // Fetch reviews and calculate average rating
+    const reviewResponse = await fetch(`/api/get-reviews/${productId.value}`);
+    if (!reviewResponse.ok) {
+      throw new Error("Failed to fetch reviews");
+    }
+    reviews.value = await reviewResponse.json();
+    if (reviews.value.length > 0) {
+      const totalRating = reviews.value.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      product.value.avgRating = (totalRating / reviews.value.length).toFixed(1); // Keep one decimal place
+    } else {
+      product.value.avgRating = "No ratings";
+    }
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+  }
 }
 
 async function handleAddCartClick() {
   // TODO: Error handling for invaliud quantity --> backend?
-  await fetch(`/api/user/add-cart:${productId.value}`, {
+  await fetch(`/api/user/add-cart/${productId.value}`, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -107,8 +125,8 @@ onMounted(fetchProduct);
 }
 
 .review-rating {
-  flex-grow: 1;
-  text-align: right;
+  font-weight: bold;
+  color: #ff9900;
 }
 
 .review-tags {

@@ -5,7 +5,7 @@
       text-variant="white"
       :header="`Shopping Cart`"
     />
-    <h2>Items</h2>
+    <h2>Products</h2>
     <!-- Loop through products in the cart -->
     <div v-if="cart && cart.products.length > 0">
       <div
@@ -13,13 +13,13 @@
         :key="cartProduct.product._id"
         class="product-block"
       >
-        <h3>{{ cartProduct.product.name }}</h3>
-        <p>{{ cartProduct.product.description }}</p>
-        <p>Price: ${{ cartProduct.product.price.toFixed(2) }}</p>
-        <p>Quantity: {{ cartProduct.quantity }}</p>
+        <h3>{{ cartProduct?.product.name }}</h3>
+        <p>{{ cartProduct?.product.description }}</p>
+        <p>Price: ${{ cartProduct?.product.price.toFixed(2) }}</p>
+        <p>Quantity: {{ cartProduct?.quantity }}</p>
         <p>
           Subtotal: ${{
-            (cartProduct.product.price * cartProduct.quantity).toFixed(2)
+            (cartProduct?.product.price * cartProduct?.quantity).toFixed(2)
           }}
         </p>
       </div>
@@ -28,7 +28,7 @@
     <div v-else>
       <p>Your cart is empty.</p>
     </div>
-    <h3>Deliver to: Address</h3>
+    <h3>Deliver to: {{ user.address }}</h3>
     <b-button @click="pay" class="mb-2">Pay</b-button>
   </div>
 </template>
@@ -41,30 +41,50 @@ const user: Ref<any> = inject("user")!;
 const cart: Ref<Cart | null> = ref(null);
 
 const total = computed(() => {
-  if (!cart.value) return 0;
-  return cart.value.products.reduce((acc, cartProduct) => {
-    return acc + cartProduct.product.price * cartProduct.quantity;
-  }, 0);
+  if (!cart.value || !cart.value.products) return 0; // Check if cart or cart.products is null
+  return cart.value.products.reduce(
+    (acc, cartProduct) =>
+      acc + cartProduct.product.price * cartProduct.quantity,
+    0
+  );
 });
 
 async function refresh() {
-  const cartResponse = await fetch("/api/user/cart");
-  if (!cartResponse.ok) {
-    throw new Error("Failed to fetch cart");
+  try {
+    const cartResponse = await fetch("/api/user/cart");
+    if (!cartResponse.ok) {
+      throw new Error("Failed to fetch cart");
+    }
+    cart.value = await cartResponse.json();
+  } catch (error) {
+    console.error(error);
+    alert("Error fetching cart");
   }
-  cart.value = (await cartResponse.json())?.products || [];
 }
+
 watch(user, refresh, { immediate: true });
 
 async function pay() {
+  if (!cart.value || !Array.isArray(cart.value.products)) {
+    console.error("Cart data is invalid or empty.");
+    alert("Your cart is empty or has invalid data.");
+    return;
+  }
+
   try {
+    // Prepare the products array for the API call
+    const productsForApi = cart.value.products.map((p) => ({
+      _id: p.product._id,
+      quantity: p.quantity,
+    }));
+
     // Update the cart as the 'save' functionality would
-    const saveResponse = await fetch("api/user/update-cart", {
+    const saveResponse = await fetch("/api/user/update-cart", {
       headers: {
         "Content-Type": "application/json",
       },
       method: "PUT",
-      body: JSON.stringify({ products: cart.value }),
+      body: JSON.stringify({ products: productsForApi }),
     });
 
     if (!saveResponse.ok) {
@@ -85,10 +105,10 @@ async function pay() {
     }
 
     alert("Payment successful!");
-    // Optionally refresh the cart or redirect the user
     refresh(); // Assuming you may want to clear the cart or update the UI
   } catch (error) {
     console.error("Payment processing error:", error);
+    alert(`Payment processing error: ${error.message}`);
   }
 }
 </script>
