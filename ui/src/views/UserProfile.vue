@@ -45,9 +45,6 @@
                 Price: ${{ product.product?.price.toFixed(2) }}
               </div>
             </div>
-            <div class="product-description">
-              {{ product.product?.description }}
-            </div>
             <div class="product-quantity">Quantity: {{ product.quantity }}</div>
             <div class="product-subtotal">
               Subtotal: ${{

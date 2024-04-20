@@ -70,7 +70,7 @@ export interface Cart {
 }
 
 export interface User {
-  _id: string;
+  _id?: string;
   name: string;
   username: string;
   email: string;

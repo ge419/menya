@@ -57,8 +57,8 @@ app.use(expressPinoLogger({ logger }));
 // set up CORS
 app.use(
   cors({
-    // origin: "http://127.0.0.1:8192",
-    origin: "http://localhost:8192",
+    // origin: "http://localhost:8192",
+    origin: "http://localhost:31002",
     credentials: true,
   })
 );
@@ -95,12 +95,24 @@ passport.deserializeUser((user: any, done) => {
   done(null, user);
 });
 
-app.get(
-  "/api/login",
-  passport.authenticate("oidc", {
-    successReturnToOrRedirect: "/",
-  })
-);
+// app.get(
+//   "/api/login",
+//   passport.authenticate("oidc", {
+//     successReturnToOrRedirect: "/",
+//   })
+// );
+
+app.get("/api/login", (req, res, next) => {
+  if (req.query.key && req.query.key === DISABLE_SECURITY) {
+    passport.authenticate("disable-security", {
+      successReturnToOrRedirect: "/",
+    })(req, res, next);
+  } else {
+    passport.authenticate("oidc", {
+      successReturnToOrRedirect: "/",
+    })(req, res, next);
+  }
+});
 
 app.get(
   "/api/login-callback",
@@ -660,8 +672,9 @@ client.connect().then(async () => {
         done(null, {
           name: req.query.user,
           preferred_username: req.query.user,
-          roles: [].concat(req.query.role),
-          email: req.query.user,
+          // preferred_username: req.query.user,
+          // roles: [].concat(req.query.role),
+          // email: req.query.user,
         });
       }
     })

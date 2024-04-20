@@ -31,6 +31,8 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
 
+// http://localhost:31002/api/login?key=alpha-beta-delta&user=test.user
+
 const user = ref({} as any);
 provide("user", user);
 

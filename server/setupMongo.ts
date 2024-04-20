@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { Cart, Product, Review } from "./data";
+import { Cart, Product, Review, User } from "./data";
 
 // Connection URL
 const url = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
@@ -117,6 +117,15 @@ const orders: Cart[] = [
   },
 ];
 
+const user: User[] = [
+  {
+    username: "test.user",
+    name: "Test User",
+    email: "testuser@duke.edu",
+    address: "test address",
+  },
+];
+
 async function main() {
   await client.connect();
   console.log("Connected successfully to MongoDB");
@@ -152,6 +161,10 @@ async function main() {
   console.log(
     "inserting test order",
     await db.collection("carts").insertMany(orders as any)
+  );
+  console.log(
+    "inserting test order",
+    await db.collection("users").insertMany(user as any)
   );
 
   process.exit(0);
