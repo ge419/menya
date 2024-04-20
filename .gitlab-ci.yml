@@ -79,9 +79,9 @@ mongo_setup:
   stage: setup
   script: cd server npm run setup
 
-# cleanup:
-#   stage: cleanup
-#   script:
-#     - kubectl delete -f k8s/
+cleanup:
+  stage: cleanup
+  script:
+    - kubectl delete -f k8s/
   # rules:
   #   - when: manual
