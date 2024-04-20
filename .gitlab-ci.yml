@@ -72,6 +72,7 @@ mongo_setup:
     sleep 5
     cd server
     npm run setup
+    sleep 5
     kill $MONGO_PORT_FORWARD_PID
 
 # cleanup:
