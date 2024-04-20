@@ -75,7 +75,9 @@ mongo_setup:
     - echo "$MONGO_PORT_FORWARD_PID"
     - sleep 5  
     - echo "Running setup script..."
-    - cd server && npm run setup
+    - cd server
+    - npm i
+    - npm run setup
     - echo "Setup complete, killing port-forward..."
     - kill $MONGO_PORT_FORWARD_PID
     - wait $MONGO_PORT_FORWARD_PID 
