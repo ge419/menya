@@ -65,15 +65,22 @@ deploy-job: # This job runs in the deploy stage.
 
 mongo_setup:
   stage: setup
-  # rules:
-  #   - when: manual
-  script: kubectl port-forward service/db 27017:27017 &
-    MONGO_PORT_FORWARD_PID=$!
-    echo "$MONGO_PORT_FORWARD_PID"
-    sleep 5
-    cd server
-    npm run setup
-    kill $MONGO_PORT_FORWARD_PID
+  script:
+    # - echo "Installing dependencies..."
+    # - npm install
+    - echo "export PATH=/opt/homebrew/bin:$PATH" >> ~/.bash_profile
+    - echo "Starting port-forward..."
+    - kubectl port-forward service/db 27017:27017 &
+    - MONGO_PORT_FORWARD_PID=$!
+    - echo "$MONGO_PORT_FORWARD_PID"
+    - sleep 5
+    - echo "Running setup script..."
+    - cd server
+    - npm i
+    - npm run setup
+    - echo "Setup complete, killing port-forward..."
+    - kill $MONGO_PORT_FORWARD_PID
+    - echo "Port-forward stopped."
 
 cleanup:
   stage: cleanup
