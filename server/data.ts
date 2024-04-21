@@ -64,9 +64,9 @@ export interface Cart {
   products: CartProduct[];
   status: "draft" | "paid";
   totalCost?: number;
-  // address
-  // telephone
-  // name
+  address?: string;
+  telephone?: string;
+  name?: string;
 }
 
 export interface User {
@@ -75,4 +75,5 @@ export interface User {
   username: string;
   email: string;
   address: string;
+  telephone: string;
 }

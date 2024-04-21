@@ -28,19 +28,44 @@
     <div v-else>
       <p>Your cart is empty.</p>
     </div>
-    <h3>Deliver to:</h3>
-    <div v-if="!isEditingAddress">
-      {{ profile?.address || "No address provided. Please add one." }}
-      <b-button @click="toggleEditAddress" class="mb-2">Edit Address</b-button>
+    <h3>Delivery Details:</h3>
+    <div v-if="!isEditing">
+      <p><strong>Name:</strong> {{ editableName }}</p>
+      <p><strong>Telephone:</strong> {{ editableTelephone }}</p>
+      <p><strong>Address:</strong> {{ editableAddress }}</p>
+      <b-button @click="toggleEdit" class="mb-2">Edit Details</b-button>
     </div>
     <div v-else>
-      <input
-        v-model="editableAddress"
-        class="form-control mb-2"
-        placeholder="Enter your address here."
-        required
-      />
-      <b-button @click="saveAddress" class="mb-2">Save Address</b-button>
+      <form @submit.prevent="updateCartDetails">
+        <div class="mb-3">
+          <label for="nameInput" class="form-label">Name</label>
+          <input
+            id="nameInput"
+            v-model="editableName"
+            class="form-control"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="telephoneInput" class="form-label">Telephone</label>
+          <input
+            id="telephoneInput"
+            v-model="editableTelephone"
+            class="form-control"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="addressInput" class="form-label">Address</label>
+          <input
+            id="addressInput"
+            v-model="editableAddress"
+            class="form-control"
+            required
+          />
+        </div>
+        <b-button type="submit" variant="primary">Save Details</b-button>
+      </form>
     </div>
     <b-button @click="confirm" class="mb-2">Confirm Cart</b-button>
     <b-button @click="pay" class="mb-2">Pay</b-button>
@@ -54,27 +79,32 @@ import { Cart, User } from "../../../server/data";
 const user: Ref<any> = inject("user")!;
 const cart: Ref<Cart | null> = ref(null);
 const profile: Ref<User | null> = ref(null);
-const isEditingAddress = ref(false);
+const isEditing = ref(false);
 const editableAddress = ref("");
+const editableTelephone = ref("");
+const editableName = ref("");
 
-// const total = computed(() => {
-//   if (!cart.value || !cart.value.products) return 0; // Check if cart or cart.products is null
-//   return cart.value.products.reduce(
-//     (acc, cartProduct) =>
-//       acc + cartProduct.product.price * cartProduct.quantity,
-//     0
-//   );
-// });
+function toggleEdit() {
+  isEditing.value = !isEditing.value;
+}
 
 async function refresh() {
   try {
     const profileResponse = await fetch("/api/user/profile");
+    if (!profileResponse.ok) {
+      throw new Error("Failed to fetch profile");
+    }
+
     profile.value = await profileResponse.json();
+
     const cartResponse = await fetch("/api/user/cart");
     if (!cartResponse.ok) {
       throw new Error("Failed to fetch cart");
     }
     cart.value = await cartResponse.json();
+    editableName.value = cart.value?.name || "";
+    editableTelephone.value = cart.value?.telephone || "";
+    editableAddress.value = cart.value?.address || "";
   } catch (error) {
     console.error(error);
     alert("Error fetching cart");
@@ -82,6 +112,56 @@ async function refresh() {
 }
 
 watch(user, refresh, { immediate: true });
+
+async function updateCartDetails() {
+  try {
+    const response = await fetch("/api/user/update-cart-details", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: editableName.value,
+        telephone: editableTelephone.value,
+        address: editableAddress.value,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update cart details");
+    }
+    alert("Cart details updated successfully!");
+    await refresh();
+    isEditing.value = false;
+  } catch (error) {
+    console.error("Error updating cart details:", error);
+    alert(`Error updating cart details: ${error.message}`);
+  }
+}
+
+// async function updateProfile() {
+//   try {
+//     const response = await fetch("/api/user/update-profile", {
+//       method: "PUT",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         name: editableName.value,
+//         telephone: editableTelephone.value,
+//         address: editableAddress.value,
+//       }),
+//     });
+//     if (response.ok) {
+//       alert("Profile updated successfully");
+//       refresh(); // Refresh to fetch updated profile
+//     } else {
+//       throw new Error("Failed to update profile");
+//     }
+//   } catch (error) {
+//     console.error("Error updating profile:", error);
+//     alert(`Error updating profile: ${error.message}`);
+//   }
+// }
 
 async function confirm() {
   if (!cart.value || !Array.isArray(cart.value.products)) {
@@ -150,31 +230,31 @@ async function pay() {
   }
 }
 
-function toggleEditAddress() {
-  isEditingAddress.value = !isEditingAddress.value;
-}
+// function toggleEditAddress() {
+//   isEditingAddress.value = !isEditingAddress.value;
+// }
 
-async function saveAddress() {
-  try {
-    const response = await fetch("/api/user/update-address", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ address: editableAddress.value }),
-    });
-    if (response.ok) {
-      alert("Address updated successfully");
-      profile.value!.address = editableAddress.value; // Update local profile address
-      isEditingAddress.value = false;
-    } else {
-      throw new Error("Failed to update address");
-    }
-  } catch (error) {
-    console.error("Error updating address:", error);
-    alert(`Error updating address: ${error.message}`);
-  }
-}
+// async function saveAddress() {
+//   try {
+//     const response = await fetch("/api/user/update-address", {
+//       method: "PUT",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ address: editableAddress.value }),
+//     });
+//     if (response.ok) {
+//       alert("Address updated successfully");
+//       profile.value!.address = editableAddress.value; // Update local profile address
+//       isEditingAddress.value = false;
+//     } else {
+//       throw new Error("Failed to update address");
+//     }
+//   } catch (error) {
+//     console.error("Error updating address:", error);
+//     alert(`Error updating address: ${error.message}`);
+//   }
+// }
 </script>
 
 <style scoped>

@@ -26,6 +26,33 @@
       <b-button type="submit" variant="primary">Update Address</b-button>
     </form>
 
+    <h2>Telephone</h2>
+    <div>Current Telephone: {{ profile?.telephone }}</div>
+
+    <form @submit.prevent="updateProfile">
+      <div class="mb-3">
+        <!-- <label for="telephoneInput" class="form-label">Telephone</label> -->
+        <input
+          id="telephoneInput"
+          v-model="editableTelephone"
+          class="form-control"
+          placeholder="Enter your telephone here."
+          required
+        />
+      </div>
+      <!-- <div class="mb-3">
+        <label for="addressInput" class="form-label">Address</label>
+        <input
+          id="addressInput"
+          v-model="editableAddress"
+          class="form-control"
+          placeholder="Enter your address here."
+          required
+        />
+      </div> -->
+      <b-button type="submit" variant="primary">Update Profile</b-button>
+    </form>
+
     <h2>Previous orders</h2>
     <!-- <div>{{ orders }}</div> -->
     <div v-if="orders && orders.length > 0">
@@ -69,31 +96,14 @@ const user: Ref<any> = inject("user")!;
 const profile: Ref<User | null> = ref(null);
 const orders: Ref<Cart[]> = ref([]);
 const editableAddress = ref("");
-
-// const productFields = [
-//   { key: "products.product.name", label: "Product Name" },
-//   { key: "products.quantity", label: "Quantity" },
-//   {
-//     key: "products.product.price",
-//     label: "Price per Item",
-//     formatter: (value: number) => `$${value.toFixed(2)}`,
-//   },
-// ];
-
-// function flattenProducts(
-//   products: CartProduct[]
-// ): Array<{ name: string; quantity: number; price: number }> {
-//   return products.map((p) => ({
-//     name: p.product.name,
-//     quantity: p.quantity,
-//     price: p.product.price,
-//   }));
-// }
+const editableTelephone = ref("");
 
 async function refresh() {
   try {
     const profileResponse = await fetch("/api/user/profile");
     profile.value = await profileResponse.json();
+    editableAddress.value = profile.value?.address || "";
+    editableTelephone.value = profile.value?.telephone || "";
 
     const ordersResponse = await fetch("/api/user/paid-orders");
     if (!ordersResponse.ok) {
@@ -129,6 +139,28 @@ async function updateAddress() {
   } catch (error) {
     console.error("Update address error:", error);
     alert("Failed to update address");
+  }
+}
+
+async function updateProfile() {
+  try {
+    const response = await fetch("/api/user/update-profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address: editableAddress.value,
+        telephone: editableTelephone.value,
+      }),
+    });
+    if (response.ok) {
+      alert("Profile updated successfully");
+      refresh();
+    } else {
+      throw new Error("Failed to update profile");
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    alert(`Error updating profile: ${error.message}`);
   }
 }
 </script>

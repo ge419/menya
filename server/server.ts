@@ -402,6 +402,7 @@ app.get("/api/user/profile", async (req, res) => {
       name: user.name,
       address: user.address,
       email: user.email,
+      telephone: user.telephone,
     });
   } catch (error) {
     console.error("Failed to retrieve user profile:", error);
@@ -434,30 +435,54 @@ app.put("/api/user/update-address", checkAuthenticated, async (req, res) => {
   }
 });
 
+app.put("/api/user/update-profile", checkAuthenticated, async (req, res) => {
+  const userId = req.user.preferred_username;
+  const { address, telephone } = req.body;
+
+  try {
+    const result = await users.updateOne(
+      { username: userId },
+      { $set: { address, telephone } }
+    );
+    if (result.modifiedCount === 0) {
+      res.status(404).json({ message: "User not found" });
+    } else {
+      res.json({ message: "Profile updated successfully" });
+    }
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Failed to update profile" });
+  }
+});
+
 app.put(
-  "/api/user/update-cart-address",
+  "/api/user/update-cart-details",
   checkAuthenticated,
   async (req, res) => {
+    const { name, telephone, address } = req.body;
     const userId = req.user.preferred_username;
-    const { address } = req.body;
-    if (!address) {
-      return res.status(400).json({ error: "Address is required" });
-    }
+
     try {
       const updateResult = await carts.updateOne(
         { userId: userId, status: "draft" },
-        { $set: { address: address } }
+        {
+          $set: {
+            name: name,
+            telephone: telephone,
+            address: address,
+          },
+        }
       );
-      if (!updateResult.matchedCount) {
+      if (updateResult.modifiedCount === 0) {
         return res
           .status(404)
           .json({ error: "No draft cart found for this user." });
       }
       res
         .status(200)
-        .json({ status: "ok", message: "Cart address updated successfully." });
+        .json({ status: "ok", message: "Cart details updated successfully." });
     } catch (error) {
-      console.error("Error updating cart address:", error);
+      console.error("Error updating cart details:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -672,6 +697,7 @@ client.connect().then(async () => {
         done(null, {
           name: req.query.user,
           preferred_username: req.query.user,
+          email: req.query.email,
           // preferred_username: req.query.user,
           // roles: [].concat(req.query.role),
           // email: req.query.user,

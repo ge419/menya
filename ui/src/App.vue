@@ -1,20 +1,18 @@
 <template>
   <div>
-    <b-navbar
-      toggleable="lg"
-      type="dark"
-      :variant="user?.roles?.includes('operator') ? 'info' : 'primary'"
-    >
+    <b-navbar toggleable="lg" type="dark" variant="primary">
       <b-navbar-brand href="#">
         <span v-if="user?.name">Welcome, {{ user.name }}</span>
         <span v-else>Menya</span>
       </b-navbar-brand>
       <b-navbar-nav>
         <b-nav-item href="/">All Products</b-nav-item>
-        <b-nav-item v-if="user?.name != null" href="/shoppingCart/${user.name}"
+        <b-nav-item
+          v-if="user?.name != null"
+          :href="`/shopping-cart/${user.email}`"
           >My Orders</b-nav-item
         >
-        <b-nav-item v-if="user?.name != null" href="/profile/${user.name}"
+        <b-nav-item v-if="user?.name != null" :href="`/profile/${user.email}`"
           >My Profile</b-nav-item
         >
         <b-nav-item v-if="user?.name == null" href="/api/login"
@@ -31,8 +29,8 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
 
-// http://localhost:31002/api/login?key=alpha-beta-delta&user=test.user
-
+// http://localhost:31002/api/login?key=alpha-beta-delta&user=test.user&preferred_username=test.user
+// http://localhost:31002/api/login?key=alpha-beta-delta&user=test.user&preferred_username=test.user&email=testuser@duke.edu
 const user = ref({} as any);
 provide("user", user);
 

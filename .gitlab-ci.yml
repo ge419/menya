@@ -17,11 +17,16 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
 
 stages: # List of stages for jobs, and their order of execution
+  - cleanup
   - build
   - deploy
   - setup
   - test
-  - cleanup
+
+cleanup:
+  stage: cleanup
+  script:
+    - kubectl delete -f k8s/
 
 build-job: # This job runs in the build stage, which runs first.
   stage: build
@@ -81,10 +86,9 @@ mongo_setup:
     - echo "Setup complete, killing port-forward..."
     - kill $MONGO_PORT_FORWARD_PID
     - echo "Port-forward stopped."
-
-cleanup:
-  stage: cleanup
-  script:
-    - kubectl delete -f k8s/
-  # rules:
-  #   - when: manual
+# cleanup:
+#   stage: cleanup
+#   script:
+#     - kubectl delete -f k8s/
+# rules:
+#   - when: manual

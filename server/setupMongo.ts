@@ -123,6 +123,7 @@ const user: User[] = [
     name: "Test User",
     email: "testuser@duke.edu",
     address: "test address",
+    telephone: "1234123414",
   },
 ];
 
