@@ -13,7 +13,7 @@ test("test clicking first product", async ({ page }) => {
     (response) =>
       response.url().includes("api/all-products") && response.status() === 200
   );
-  await page.waitForSelector('[data-testid="product-item0"]');
+  await page.waitForSelector('[data-testid="product-item4"]');
 
   await page.click('[data-testid="product-item0"]');
 
