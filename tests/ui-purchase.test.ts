@@ -1,12 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-// test("test disable security login", async ({ page }) => {
-//   await page.goto(
-//     "http://localhost:31002/api/login?key=alpha-beta-delta&user=test.user&preferred_username=test.user&email=testuser@duke.edu"
-//   );
-//   await expect(page).toHaveText('test.user');
-// });
-
 test("test clicking first product", async ({ page }) => {
   page.on("dialog", async (dialog) => {
     await dialog.dismiss();
@@ -65,31 +58,4 @@ test("test clicking first product", async ({ page }) => {
     .textContent();
 
   await expect(lastProductName).toContain("Shin Ramen");
-
-  // const lastProductTotal = await page
-  //   .locator(".order-block:last-child .product-subtotal")
-  //   .textContent();
-
-  // Assert the product name and total cost
-  // await expect(lastProductName).toContain("Shin Ramen");
-  // await expect(lastProductTotal).toContain("Total: $5.99");
 });
-
-// test("has title", async ({ page }) => {
-//   await page.goto("https://playwright.dev/");
-
-//   // Expect a title "to contain" a substring.
-//   await expect(page).toHaveTitle(/Playwright/);
-// });
-
-// test("get started link", async ({ page }) => {
-//   await page.goto("https://playwright.dev/");
-
-//   // Click the get started link.
-//   await page.getByRole("link", { name: "Get started" }).click();
-
-//   // Expects page to have a heading with the name of Installation.
-//   await expect(
-//     page.getByRole("heading", { name: "Installation" })
-//   ).toBeVisible();
-// });
