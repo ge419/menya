@@ -31,7 +31,6 @@
 
     <form @submit.prevent="updateProfile">
       <div class="mb-3">
-        <!-- <label for="telephoneInput" class="form-label">Telephone</label> -->
         <input
           id="telephoneInput"
           v-model="editableTelephone"
@@ -40,21 +39,10 @@
           required
         />
       </div>
-      <!-- <div class="mb-3">
-        <label for="addressInput" class="form-label">Address</label>
-        <input
-          id="addressInput"
-          v-model="editableAddress"
-          class="form-control"
-          placeholder="Enter your address here."
-          required
-        />
-      </div> -->
       <b-button type="submit" variant="primary">Update Profile</b-button>
     </form>
 
     <h2>Previous orders</h2>
-    <!-- <div>{{ orders }}</div> -->
     <div v-if="orders && orders.length > 0">
       <div v-for="(order, index) in orders" :key="index" class="order-block">
         <h4>
@@ -67,12 +55,22 @@
             class="product-block"
           >
             <div class="product-header">
-              <div class="product-name">{{ product.product?.name }}</div>
-              <div class="product-price">
+              <div class="product-name" :data-testid="'product-name-' + index">
+                {{ product.product?.name }}
+              </div>
+              <div
+                class="product-price"
+                :data-testid="'product-price-' + index"
+              >
                 Price: ${{ product.product?.price.toFixed(2) }}
               </div>
             </div>
-            <div class="product-quantity">Quantity: {{ product.quantity }}</div>
+            <div
+              class="product-quantity"
+              :data-testid="'product-quantity-' + index"
+            >
+              Quantity: {{ product.quantity }}
+            </div>
             <div class="product-subtotal">
               Subtotal: ${{
                 (product.product?.price * product.quantity).toFixed(2)

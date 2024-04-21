@@ -86,6 +86,14 @@ mongo_setup:
     - echo "Setup complete, killing port-forward..."
     - kill $MONGO_PORT_FORWARD_PID
     - echo "Port-forward stopped."
+
+tests:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.43.0-jammy
+  script:
+    - echo "Running E2E tests"
+    - npm ci
+    - npx playwright test
 # cleanup:
 #   stage: cleanup
 #   script:

@@ -10,9 +10,13 @@
         <b-nav-item
           v-if="user?.name != null"
           :href="`/shopping-cart/${user.email}`"
-          >My Orders</b-nav-item
+          data-testid="my-cart-nav"
+          >My Cart</b-nav-item
         >
-        <b-nav-item v-if="user?.name != null" :href="`/profile/${user.email}`"
+        <b-nav-item
+          v-if="user?.name != null"
+          :href="`/profile/${user.email}`"
+          data-testid="my-profile-nav"
           >My Profile</b-nav-item
         >
         <b-nav-item v-if="user?.name == null" href="/api/login"

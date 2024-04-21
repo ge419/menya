@@ -1,0 +1,15 @@
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: playwright-tests
+# spec:
+#   template:
+#     spec:
+#       containers:
+#         - name: playwright
+#           image: yourregistry/playwright-tests:latest
+#           env:
+#             - name: BASE_URL
+#               value: "http://your-application-service"
+#       restartPolicy: Never
+#   backoffLimit: 4
